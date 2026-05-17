@@ -1,0 +1,9 @@
+{
+  "name": "Collectible Catalog",
+  "short_name": "Catalog",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f7f4",
+  "theme_color": "#247b73",
+  "icons": []
+}

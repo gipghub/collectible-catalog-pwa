@@ -1,0 +1,11 @@
+{
+  "name": "collectible-catalog-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-platform collectible catalog PWA with photo capture, comparable search links, and printable labels.",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-project.mjs",
+    "serve": "python -m http.server 4173 --bind 127.0.0.1"
+  }
+}
