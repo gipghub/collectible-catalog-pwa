@@ -6,7 +6,8 @@ A dependency-free starter app for cataloging collectibles across desktop, tablet
 
 - Repository: https://github.com/gipghub/collectible-catalog-pwa
 - Live app: https://gipghub.github.io/collectible-catalog-pwa/
-- CI/CD: GitHub Actions validates the static app and deploys `main` to GitHub Pages.
+- Deployment: GitHub Pages publishes the static prototype from `main`.
+- CI/CD: A GitHub Actions workflow is prepared in `.github/workflows/ci-cd.yml`; pushing it requires GitHub CLI `workflow` scope.
 
 ## Run Locally
 
