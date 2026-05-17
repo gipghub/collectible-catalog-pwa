@@ -11,7 +11,9 @@ const requiredFiles = [
   "src/main.js",
   "src/application/catalogService.js",
   "src/domain/collectible.js",
+  "src/domain/userProfile.js",
   "src/infrastructure/catalogRepository.js",
+  "src/infrastructure/userProfileRepository.js",
   "src/ui/appView.js",
   "src/styles.css"
 ];

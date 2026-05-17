@@ -36,6 +36,7 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 - Comparable-search links for marketplaces and web sources.
 - Provider-ready comparable scanning with accepted/rejected candidate review.
 - Manual comparable sale records with range and average summary.
+- Persistent user profile settings with dark, light, or system theme.
 - Printable labels with catalog code, item URL, and Code 128 barcode.
 - Clean Code-oriented folder structure:
   - `src/domain`: business rules and entities.

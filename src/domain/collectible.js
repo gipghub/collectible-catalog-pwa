@@ -86,7 +86,7 @@ export function matchesCollectible(item, query, category) {
   return matchesCategory && searchable.includes(normalizedQuery);
 }
 
-export function formatMoney(value) {
+export function formatMoney(value, currency = "USD") {
   const amount = Number(value);
 
   if (!Number.isFinite(amount)) {
@@ -95,7 +95,7 @@ export function formatMoney(value) {
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 0
   }).format(amount);
 }

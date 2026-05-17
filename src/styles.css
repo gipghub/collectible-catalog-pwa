@@ -15,6 +15,22 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #101412;
+  --surface: #181d1b;
+  --surface-muted: #22302d;
+  --ink: #edf2ef;
+  --muted: #a8b5af;
+  --line: #35413d;
+  --teal: #56c3b6;
+  --teal-strong: #2f9e91;
+  --coral: #e17366;
+  --mustard: #f0c15b;
+  --green: #8fcf77;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -86,6 +102,41 @@ svg {
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
+}
+
+.profile-button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  max-width: 190px;
+  padding: 4px 10px 4px 4px;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.profile-button span,
+.profile-identity span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  color: #ffffff;
+  background: var(--teal);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.profile-button strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .result-count {
@@ -424,6 +475,50 @@ svg {
   box-shadow: 0 26px 70px rgba(31, 36, 40, 0.24);
 }
 
+.profile-dialog {
+  width: min(620px, calc(100vw - 28px));
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 26px 70px rgba(31, 36, 40, 0.24);
+}
+
+.profile-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.profile-form {
+  padding: 22px;
+  background: var(--surface);
+}
+
+.profile-identity {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  margin-bottom: 16px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.profile-identity span {
+  width: 46px;
+  height: 46px;
+  font-size: 16px;
+}
+
+.profile-identity strong {
+  display: block;
+  font-size: 18px;
+}
+
+.profile-identity p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
 .detail-dialog::backdrop {
   background: rgba(31, 36, 40, 0.45);
 }
@@ -512,6 +607,12 @@ svg {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 800;
+}
+
+:root[data-theme="dark"] .comp-summary span,
+:root[data-theme="dark"] .status-badge {
+  background: #3c3320;
+  border-color: #735d27;
 }
 
 .provider-form {
@@ -752,8 +853,11 @@ svg {
     align-items: stretch;
   }
 
+  .profile-button,
+  .header-actions > .icon-button,
   .button {
     width: 100%;
+    max-width: none;
   }
 
   .side-panel {

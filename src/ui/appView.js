@@ -1,10 +1,18 @@
 import { CATEGORIES, CONDITIONS, formatMoney } from "../domain/collectible.js";
 import { summarizeComparables } from "../domain/comparable.js";
 import { createLabelViewModel } from "../domain/label.js";
+import {
+  CURRENCY_OPTIONS,
+  THEME_OPTIONS,
+  createUserProfile,
+  getProfileInitials,
+  resolveTheme
+} from "../domain/userProfile.js";
 
 export function mountApp({
   root,
   service,
+  profileRepository,
   imageReader,
   comparableProvider,
   createBarcodeSvg
@@ -12,8 +20,10 @@ export function mountApp({
   const state = {
     category: "All",
     editingId: null,
+    isProfileOpen: false,
     labelItemIds: [],
     pendingPhotoDataUrl: "",
+    profile: profileRepository.load(),
     providerEndpoint: comparableProvider.getEndpoint?.() || "",
     scanError: "",
     scanningItemId: "",
@@ -32,6 +42,8 @@ export function mountApp({
   openItemFromHash(state);
 
   function render(currentState) {
+    applyTheme(currentState.profile.theme);
+
     const allItems = service.list();
     const filteredItems = service.list({
       search: currentState.search,
@@ -46,6 +58,7 @@ export function mountApp({
       renderMain(currentState, allItems, filteredItems, editingItem),
       renderLabelWorkbench(labelItems),
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
+      currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
     ].join("");
 
@@ -58,13 +71,23 @@ export function mountApp({
       });
       dialog.showModal();
     }
+
+    if (currentState.isProfileOpen) {
+      const profileDialog = root.querySelector("#profileDialog");
+      profileDialog.addEventListener("close", () => {
+        if (currentState.isProfileOpen) {
+          closeProfile(currentState);
+        }
+      });
+      profileDialog.showModal();
+    }
   }
 
   function renderHeader(currentState, filteredCount) {
     return `
       <header class="app-header">
         <div>
-          <p class="eyebrow">Collection workspace</p>
+          <p class="eyebrow">${escapeHtml(currentState.profile.collectionName)}</p>
           <h1>Collectible Catalog</h1>
         </div>
         <div class="header-actions" role="search">
@@ -76,6 +99,16 @@ export function mountApp({
           <button class="button secondary" type="button" data-action="print-filtered-labels">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
             Labels
+          </button>
+          <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Toggle dark mode" title="Toggle dark mode">
+            ${currentState.profile.theme === "dark"
+              ? `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M3 12h2M19 12h2M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path></svg>`
+              : `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>`
+            }
+          </button>
+          <button class="profile-button" type="button" data-action="open-profile" aria-label="Open profile settings">
+            <span>${escapeHtml(getProfileInitials(currentState.profile))}</span>
+            <strong>${escapeHtml(currentState.profile.displayName)}</strong>
           </button>
           <button class="button primary" type="button" data-action="start-new">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
@@ -118,6 +151,7 @@ export function mountApp({
   function renderStats(items) {
     const totalValue = items.reduce((sum, item) => sum + (Number(item.estimatedValue) || 0), 0);
     const photoCount = items.filter((item) => item.photoDataUrl).length;
+    const currency = state.profile.currency;
 
     return `
       <section class="stat-grid" aria-label="Catalog summary">
@@ -126,7 +160,7 @@ export function mountApp({
           <p>Items</p>
         </article>
         <article>
-          <span>${formatMoney(totalValue)}</span>
+          <span>${formatMoney(totalValue, currency)}</span>
           <p>Estimated value</p>
         </article>
         <article>
@@ -179,7 +213,7 @@ export function mountApp({
         </div>
         <div class="form-grid">
           ${renderTextField("title", "Title", editingItem?.title || "", "1964 Kennedy half dollar")}
-          ${renderSelectField("category", "Category", CATEGORIES, editingItem?.category || "Other")}
+          ${renderSelectField("category", "Category", CATEGORIES, editingItem?.category || currentState.profile.defaultCategory)}
           ${renderTextField("maker", "Maker or brand", editingItem?.maker || "", "Topps, Hasbro, US Mint")}
           ${renderTextField("series", "Series or set", editingItem?.series || "", "Base set, first edition")}
           ${renderSelectField("condition", "Condition", CONDITIONS, editingItem?.condition || "Ungraded")}
@@ -233,7 +267,7 @@ export function mountApp({
             <p>${escapeHtml(item.category)} | ${escapeHtml(item.condition)}</p>
           </div>
           <div class="item-meta">
-            <span>${formatMoney(item.estimatedValue)}</span>
+            <span>${formatMoney(item.estimatedValue, state.profile.currency)}</span>
             <span>${item.comparables.length} comps</span>
           </div>
           <div class="card-actions">
@@ -281,7 +315,7 @@ export function mountApp({
             <dl class="detail-list">
               <div><dt>Maker</dt><dd>${escapeHtml(item.maker || "Not set")}</dd></div>
               <div><dt>Series</dt><dd>${escapeHtml(item.series || "Not set")}</dd></div>
-              <div><dt>Estimated</dt><dd>${formatMoney(item.estimatedValue)}</dd></div>
+              <div><dt>Estimated</dt><dd>${formatMoney(item.estimatedValue, currentState.profile.currency)}</dd></div>
               <div><dt>Acquired</dt><dd>${escapeHtml(item.acquisitionDate || "Not set")}</dd></div>
             </dl>
             ${item.notes ? `<p class="notes">${escapeHtml(item.notes)}</p>` : ""}
@@ -327,9 +361,9 @@ export function mountApp({
         </div>
         <div class="comp-summary">
           <span>${summary.count} recorded</span>
-          <span>${summary.low === null ? "Low not set" : `Low ${formatMoney(summary.low)}`}</span>
-          <span>${summary.average === null ? "Avg not set" : `Avg ${formatMoney(summary.average)}`}</span>
-          <span>${summary.high === null ? "High not set" : `High ${formatMoney(summary.high)}`}</span>
+          <span>${summary.low === null ? "Low not set" : `Low ${formatMoney(summary.low, currentState.profile.currency)}`}</span>
+          <span>${summary.average === null ? "Avg not set" : `Avg ${formatMoney(summary.average, currentState.profile.currency)}`}</span>
+          <span>${summary.high === null ? "High not set" : `High ${formatMoney(summary.high, currentState.profile.currency)}`}</span>
         </div>
         <form class="comparable-form" data-role="comparable-form" data-item-id="${escapeAttribute(item.id)}">
           ${renderTextField("source", "Source", "", "eBay, auction house, dealer")}
@@ -371,7 +405,7 @@ export function mountApp({
           <strong>${escapeHtml(candidate.title)}</strong>
           <div class="candidate-meta">
             <span>${escapeHtml(candidate.source)}</span>
-            <span>${formatMoney(candidate.price)}</span>
+            <span>${formatMoney(candidate.price, state.profile.currency)}</span>
             <span>${candidate.confidence}% match</span>
             <span class="status-badge">${escapeHtml(candidate.status)}</span>
           </div>
@@ -398,7 +432,7 @@ export function mountApp({
         ${comparables.map((comparable) => `
           <li>
             <strong>${escapeHtml(comparable.title)}</strong>
-            <span>${escapeHtml(comparable.source)} | ${formatMoney(comparable.price)}</span>
+            <span>${escapeHtml(comparable.source)} | ${formatMoney(comparable.price, state.profile.currency)}</span>
             ${comparable.url ? `<a href="${escapeAttribute(comparable.url)}" target="_blank" rel="noreferrer">Open source</a>` : ""}
           </li>
         `).join("")}
@@ -448,6 +482,46 @@ export function mountApp({
     `;
   }
 
+  function renderProfileDialog(profile) {
+    return `
+      <dialog class="profile-dialog" id="profileDialog">
+        <form class="profile-form" data-role="profile-form">
+          <div class="dialog-header">
+            <div>
+              <p class="eyebrow">User settings</p>
+              <h2>Profile</h2>
+            </div>
+            <button class="icon-button" type="button" data-action="close-profile" aria-label="Close profile settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div class="profile-identity">
+            <span>${escapeHtml(getProfileInitials(profile))}</span>
+            <div>
+              <strong>${escapeHtml(profile.displayName)}</strong>
+              <p>${escapeHtml(profile.email || "Local profile")}</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            ${renderTextField("displayName", "Display name", profile.displayName, "Collector")}
+            ${renderTextField("email", "Email", profile.email, "you@example.com", "email")}
+            ${renderTextField("collectionName", "Collection name", profile.collectionName, "Collection workspace")}
+            ${renderSelectField("defaultCategory", "Default category", CATEGORIES, profile.defaultCategory)}
+            ${renderSelectField("currency", "Currency", CURRENCY_OPTIONS, profile.currency)}
+            ${renderSelectField("theme", "Theme", THEME_OPTIONS, profile.theme)}
+          </div>
+          <div class="form-actions">
+            <button class="button primary" type="submit">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+              Save Profile
+            </button>
+            <button class="button secondary" type="button" data-action="close-profile">Cancel</button>
+          </div>
+        </form>
+      </dialog>
+    `;
+  }
+
   function renderTextField(name, label, value = "", placeholder = "", type = "text") {
     return `
       <label class="field">
@@ -483,6 +557,21 @@ export function mountApp({
     if (action === "start-new") {
       resetForm(currentState);
       render(currentState);
+    }
+
+    if (action === "open-profile") {
+      currentState.isProfileOpen = true;
+      render(currentState);
+    }
+
+    if (action === "close-profile") {
+      closeProfile(currentState);
+    }
+
+    if (action === "toggle-theme") {
+      const theme = currentState.profile.theme === "dark" ? "light" : "dark";
+      saveProfile(currentState, { theme });
+      showToast(currentState, `${theme === "dark" ? "Dark" : "Light"} theme enabled.`);
     }
 
     if (action === "cancel-edit") {
@@ -565,7 +654,16 @@ export function mountApp({
   function handleSubmit(event, currentState) {
     const catalogForm = event.target.closest("[data-role='catalog-form']");
     const comparableForm = event.target.closest("[data-role='comparable-form']");
+    const profileForm = event.target.closest("[data-role='profile-form']");
     const providerForm = event.target.closest("[data-role='provider-form']");
+
+    if (profileForm) {
+      event.preventDefault();
+      saveProfile(currentState, formToObject(profileForm));
+      currentState.isProfileOpen = false;
+      showToast(currentState, "Profile settings saved.");
+      return;
+    }
 
     if (catalogForm) {
       event.preventDefault();
@@ -646,6 +744,11 @@ export function mountApp({
     render(currentState);
   }
 
+  function closeProfile(currentState) {
+    currentState.isProfileOpen = false;
+    render(currentState);
+  }
+
   function openItemFromHash(currentState) {
     const params = new URLSearchParams(window.location.hash.replace("#", ""));
     const itemId = params.get("item");
@@ -659,6 +762,17 @@ export function mountApp({
   function resetForm(currentState) {
     currentState.editingId = null;
     currentState.pendingPhotoDataUrl = "";
+  }
+
+  function saveProfile(currentState, input) {
+    currentState.profile = createUserProfile({ ...currentState.profile, ...input });
+    profileRepository.save(currentState.profile);
+  }
+
+  function applyTheme(theme) {
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches || false;
+    document.documentElement.dataset.theme = resolveTheme(theme, prefersDark);
+    document.documentElement.style.colorScheme = resolveTheme(theme, prefersDark);
   }
 
   async function scanComparables(itemId, currentState) {

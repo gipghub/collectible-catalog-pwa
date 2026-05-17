@@ -3,6 +3,7 @@ import { createCatalogRepository } from "./infrastructure/catalogRepository.js";
 import { readImageAsDataUrl } from "./infrastructure/imageProcessor.js";
 import { createMarketplaceComparableProvider } from "./infrastructure/marketplaceComparableProvider.js";
 import { createCode128BarcodeSvg } from "./infrastructure/barcode.js";
+import { createUserProfileRepository } from "./infrastructure/userProfileRepository.js";
 import { mountApp } from "./ui/appView.js";
 
 const service = createCatalogService(createCatalogRepository());
@@ -10,6 +11,7 @@ const service = createCatalogService(createCatalogRepository());
 mountApp({
   root: document.querySelector("#app"),
   service,
+  profileRepository: createUserProfileRepository(),
   imageReader: readImageAsDataUrl,
   comparableProvider: createMarketplaceComparableProvider(),
   createBarcodeSvg: createCode128BarcodeSvg
