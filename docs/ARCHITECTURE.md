@@ -26,7 +26,9 @@ This starter is a Progressive Web App. It runs on desktop browsers and mobile br
 
 The app does not scrape websites. Automated marketplace scraping often violates terms of service, breaks under layout changes, and is difficult to make reliable. Instead, the app creates focused research links and supports an approved comparable provider endpoint.
 
-The provider endpoint is configured in the browser and called with item context. It should return normalized candidate sales. The app then requires human review before a candidate becomes a recorded comparable. This keeps valuation traceable and prevents low-quality matches from silently changing collection value.
+The browser can also call PriceCharting directly with a user-supplied API token. That path produces guide-value candidates from the official product price endpoint. These are useful valuation signals, but they are not historic sold listings.
+
+The custom provider endpoint is configured in the browser and called with item context. It should return normalized candidate sales from approved sources such as eBay Marketplace Insights, WorthPoint, auction records, or a private dealer feed. The app then requires human review before a candidate becomes a recorded comparable. This keeps valuation traceable and prevents low-quality matches from silently changing collection value.
 
 Expected endpoint contract:
 
@@ -48,7 +50,7 @@ Expected endpoint contract:
 }
 ```
 
-Marketplace API credentials should live in a backend or serverless function, never in this static client.
+Marketplace API credentials should live in a backend or serverless function, never in this static client. For production use, PriceCharting tokens should move behind that same backend boundary if the token belongs to the business rather than the individual collector using the browser.
 
 ## Label Strategy
 

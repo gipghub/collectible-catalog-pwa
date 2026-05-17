@@ -93,10 +93,13 @@ export function formatMoney(value, currency = "USD") {
     return "No value";
   }
 
+  const fractionDigits = Number.isInteger(amount) ? 0 : 2;
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    maximumFractionDigits: 0
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits
   }).format(amount);
 }
 

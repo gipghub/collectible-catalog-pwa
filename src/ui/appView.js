@@ -23,6 +23,7 @@ export function mountApp({
     isProfileOpen: false,
     labelItemIds: [],
     pendingPhotoDataUrl: "",
+    priceChartingToken: comparableProvider.getPriceChartingToken?.() || "",
     profile: profileRepository.load(),
     providerEndpoint: comparableProvider.getEndpoint?.() || "",
     scanError: "",
@@ -341,11 +342,20 @@ export function mountApp({
           </button>
         </div>
         <form class="provider-form" data-role="provider-form">
-          <label class="field">
-            <span>Approved API endpoint</span>
-            <input name="providerEndpoint" type="url" value="${escapeAttribute(currentState.providerEndpoint)}" placeholder="https://api.example.com/comparables">
-          </label>
-          <button class="button secondary" type="submit">Save Endpoint</button>
+          <div class="provider-fields">
+            <label class="field">
+              <span>PriceCharting token</span>
+              <input name="priceChartingToken" type="password" value="${escapeAttribute(currentState.priceChartingToken)}" placeholder="40-character API token" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>Approved API endpoint</span>
+              <input name="providerEndpoint" type="url" value="${escapeAttribute(currentState.providerEndpoint)}" placeholder="https://api.example.com/comparables">
+            </label>
+          </div>
+          <div class="provider-actions">
+            ${renderProviderStatus(currentState)}
+            <button class="button secondary" type="submit">Save Providers</button>
+          </div>
         </form>
         ${currentState.scanError ? `<p class="error-text">${escapeHtml(currentState.scanError)}</p>` : ""}
         ${renderCandidateList(item)}
@@ -379,6 +389,20 @@ export function mountApp({
         </form>
         ${renderComparableList(item.comparables)}
       </section>
+    `;
+  }
+
+  function renderProviderStatus(currentState) {
+    const providers = [
+      currentState.priceChartingToken ? "PriceCharting on" : "",
+      currentState.providerEndpoint ? "Endpoint on" : ""
+    ].filter(Boolean);
+    const labels = providers.length > 0 ? providers : ["Demo mode"];
+
+    return `
+      <div class="provider-status" aria-label="Comparable provider status">
+        ${labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}
+      </div>
     `;
   }
 
@@ -694,9 +718,11 @@ export function mountApp({
       event.preventDefault();
       const payload = formToObject(providerForm);
       comparableProvider.setEndpoint?.(payload.providerEndpoint);
+      comparableProvider.setPriceChartingToken?.(payload.priceChartingToken);
       currentState.providerEndpoint = comparableProvider.getEndpoint?.() || "";
+      currentState.priceChartingToken = comparableProvider.getPriceChartingToken?.() || "";
       currentState.scanError = "";
-      showToast(currentState, currentState.providerEndpoint ? "Provider endpoint saved." : "Provider endpoint cleared.");
+      showToast(currentState, "Provider settings saved.");
     }
   }
 
@@ -789,7 +815,7 @@ export function mountApp({
     try {
       const candidates = await comparableProvider.scanCandidates(item);
       service.addComparableCandidates(itemId, candidates);
-      showToast(currentState, `${candidates.length} candidates ready for review.`);
+      showToast(currentState, candidates.length === 0 ? "No candidates found." : `${candidates.length} candidates ready for review.`);
     } catch (error) {
       currentState.scanError = error.message || "Comparable scan failed.";
       render(currentState);
