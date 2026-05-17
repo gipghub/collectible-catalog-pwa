@@ -5,7 +5,8 @@
 - Keep functions short and named after the business action they perform.
 - Put business rules in `src/domain`, not in event handlers.
 - Keep UI rendering separate from storage and browser APIs.
-- Depend on small adapter functions for external systems such as storage, image processing, and comparable search.
+- Depend on small adapter functions for external systems such as storage, image processing, and comparable provider search.
+- Keep automated comparable candidates separate from recorded comparables until the user accepts them.
 - Prefer plain data objects at boundaries so records can be synced later.
 - Write code that is easy to delete or replace when the prototype becomes a production app.
 

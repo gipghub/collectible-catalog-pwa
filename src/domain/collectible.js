@@ -40,6 +40,7 @@ export function createCollectible(input, now = new Date()) {
     notes: cleanText(input.notes),
     photoDataUrl: input.photoDataUrl || "",
     comparables: Array.isArray(input.comparables) ? input.comparables : [],
+    comparableCandidates: Array.isArray(input.comparableCandidates) ? input.comparableCandidates : [],
     createdAt,
     updatedAt: now.toISOString()
   };

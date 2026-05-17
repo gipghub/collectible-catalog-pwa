@@ -313,6 +313,11 @@ svg {
   background: var(--teal-strong);
 }
 
+.button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .button.secondary {
   color: var(--ink);
   background: var(--surface-muted);
@@ -509,6 +514,102 @@ svg {
   font-weight: 800;
 }
 
+.provider-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.provider-form .field {
+  margin: 0;
+}
+
+.candidate-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.candidate-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--mustard);
+  border-radius: 8px;
+}
+
+.candidate-card.accepted {
+  border-left-color: var(--green);
+}
+
+.candidate-card.rejected {
+  border-left-color: var(--coral);
+  opacity: 0.74;
+}
+
+.candidate-card strong,
+.candidate-card p {
+  overflow-wrap: anywhere;
+}
+
+.candidate-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.candidate-meta,
+.candidate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.candidate-meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.candidate-actions {
+  justify-content: flex-end;
+}
+
+.candidate-actions a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--teal);
+  font-weight: 800;
+}
+
+.status-badge {
+  padding: 4px 7px;
+  color: var(--ink);
+  background: #fff8e6;
+  border: 1px solid #ead492;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.error-text {
+  margin: 0;
+  color: var(--coral);
+  font-weight: 800;
+}
+
 .comparable-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -661,8 +762,14 @@ svg {
 
   .form-grid,
   .detail-list,
-  .comparable-form {
+  .comparable-form,
+  .provider-form,
+  .candidate-card {
     grid-template-columns: 1fr;
+  }
+
+  .candidate-actions {
+    justify-content: stretch;
   }
 
   .dialog-layout {

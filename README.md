@@ -1,6 +1,6 @@
 # Collectible Catalog PWA
 
-A dependency-free starter app for cataloging collectibles across desktop, tablet, and mobile browsers. It includes photo capture, searchable catalog entries, comparable-search links, manually recorded comparable sales, and printable labels that cross-reference each item by catalog code and barcode.
+A dependency-free starter app for cataloging collectibles across desktop, tablet, and mobile browsers. It includes photo capture, searchable catalog entries, comparable-search links, provider-ready comparable candidates, manually recorded comparable sales, and printable labels that cross-reference each item by catalog code and barcode.
 
 ## Prototype
 
@@ -34,6 +34,7 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
 - Comparable-search links for marketplaces and web sources.
+- Provider-ready comparable scanning with accepted/rejected candidate review.
 - Manual comparable sale records with range and average summary.
 - Printable labels with catalog code, item URL, and Code 128 barcode.
 - Clean Code-oriented folder structure:
@@ -46,7 +47,7 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 
 1. Replace browser-only storage with a synced backend.
 2. Add user accounts, collection sharing, and cloud photo storage.
-3. Add a real comparable provider API where terms allow automated retrieval.
+3. Add a hosted comparable provider endpoint with marketplace API credentials stored server-side.
 4. Add QR labels and printer presets for Avery-style label sheets.
 5. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 

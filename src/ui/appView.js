@@ -14,6 +14,9 @@ export function mountApp({
     editingId: null,
     labelItemIds: [],
     pendingPhotoDataUrl: "",
+    providerEndpoint: comparableProvider.getEndpoint?.() || "",
+    scanError: "",
+    scanningItemId: "",
     search: "",
     selectedId: null,
     toast: ""
@@ -42,7 +45,7 @@ export function mountApp({
       renderHeader(currentState, filteredItems.length),
       renderMain(currentState, allItems, filteredItems, editingItem),
       renderLabelWorkbench(labelItems),
-      selectedItem ? renderDetailDialog(selectedItem) : "",
+      selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
     ].join("");
 
@@ -249,7 +252,7 @@ export function mountApp({
     `;
   }
 
-  function renderDetailDialog(item) {
+  function renderDetailDialog(item, currentState) {
     const summary = summarizeComparables(item.comparables);
     const links = comparableProvider.buildLinks(item);
 
@@ -282,19 +285,39 @@ export function mountApp({
               <div><dt>Acquired</dt><dd>${escapeHtml(item.acquisitionDate || "Not set")}</dd></div>
             </dl>
             ${item.notes ? `<p class="notes">${escapeHtml(item.notes)}</p>` : ""}
-            ${renderComparableSection(item, summary, links)}
+            ${renderComparableSection(item, summary, links, currentState)}
           </div>
         </div>
       </dialog>
     `;
   }
 
-  function renderComparableSection(item, summary, links) {
+  function renderComparableSection(item, summary, links, currentState) {
+    const isScanning = currentState.scanningItemId === item.id;
+
     return `
       <section class="comparables">
         <div class="section-heading compact">
           <div>
             <p class="eyebrow">Comparable scan</p>
+            <h3>Provider Candidates</h3>
+          </div>
+          <button class="button secondary" type="button" data-action="scan-comparables" data-id="${escapeAttribute(item.id)}" ${isScanning ? "disabled" : ""}>
+            ${isScanning ? "Scanning..." : "Auto Scan"}
+          </button>
+        </div>
+        <form class="provider-form" data-role="provider-form">
+          <label class="field">
+            <span>Approved API endpoint</span>
+            <input name="providerEndpoint" type="url" value="${escapeAttribute(currentState.providerEndpoint)}" placeholder="https://api.example.com/comparables">
+          </label>
+          <button class="button secondary" type="submit">Save Endpoint</button>
+        </form>
+        ${currentState.scanError ? `<p class="error-text">${escapeHtml(currentState.scanError)}</p>` : ""}
+        ${renderCandidateList(item)}
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Manual research</p>
             <h3>Research Links</h3>
           </div>
           <button class="button secondary" type="button" data-action="copy-code" data-code="${escapeAttribute(item.catalogCode)}">Copy Code</button>
@@ -322,6 +345,46 @@ export function mountApp({
         </form>
         ${renderComparableList(item.comparables)}
       </section>
+    `;
+  }
+
+  function renderCandidateList(item) {
+    const candidates = item.comparableCandidates || [];
+
+    if (candidates.length === 0) {
+      return `<p class="muted">No provider candidates yet.</p>`;
+    }
+
+    return `
+      <ul class="candidate-list">
+        ${candidates.map((candidate) => renderCandidate(candidate, item.id)).join("")}
+      </ul>
+    `;
+  }
+
+  function renderCandidate(candidate, itemId) {
+    const canReview = candidate.status === "pending";
+
+    return `
+      <li class="candidate-card ${escapeAttribute(candidate.status)}">
+        <div>
+          <strong>${escapeHtml(candidate.title)}</strong>
+          <div class="candidate-meta">
+            <span>${escapeHtml(candidate.source)}</span>
+            <span>${formatMoney(candidate.price)}</span>
+            <span>${candidate.confidence}% match</span>
+            <span class="status-badge">${escapeHtml(candidate.status)}</span>
+          </div>
+          ${candidate.matchNotes ? `<p>${escapeHtml(candidate.matchNotes)}</p>` : ""}
+        </div>
+        <div class="candidate-actions">
+          ${candidate.url ? `<a href="${escapeAttribute(candidate.url)}" target="_blank" rel="noreferrer">Source</a>` : ""}
+          ${canReview ? `
+            <button class="button secondary" type="button" data-action="reject-candidate" data-id="${escapeAttribute(itemId)}" data-candidate-id="${escapeAttribute(candidate.id)}">Reject</button>
+            <button class="button primary" type="button" data-action="accept-candidate" data-id="${escapeAttribute(itemId)}" data-candidate-id="${escapeAttribute(candidate.id)}">Accept</button>
+          ` : ""}
+        </div>
+      </li>
     `;
   }
 
@@ -461,6 +524,20 @@ export function mountApp({
       showToast(currentState, "Catalog code copied.");
     }
 
+    if (action === "scan-comparables") {
+      await scanComparables(id, currentState);
+    }
+
+    if (action === "accept-candidate") {
+      service.acceptComparableCandidate(id, actionTarget.dataset.candidateId);
+      showToast(currentState, "Comparable accepted.");
+    }
+
+    if (action === "reject-candidate") {
+      service.rejectComparableCandidate(id, actionTarget.dataset.candidateId);
+      showToast(currentState, "Candidate rejected.");
+    }
+
     if (action === "print-selected-label") {
       currentState.labelItemIds = [id];
       render(currentState);
@@ -488,6 +565,7 @@ export function mountApp({
   function handleSubmit(event, currentState) {
     const catalogForm = event.target.closest("[data-role='catalog-form']");
     const comparableForm = event.target.closest("[data-role='comparable-form']");
+    const providerForm = event.target.closest("[data-role='provider-form']");
 
     if (catalogForm) {
       event.preventDefault();
@@ -512,6 +590,15 @@ export function mountApp({
       service.addComparable(comparableForm.dataset.itemId, formToObject(comparableForm));
       comparableForm.reset();
       showToast(currentState, "Comparable sale recorded.");
+    }
+
+    if (providerForm) {
+      event.preventDefault();
+      const payload = formToObject(providerForm);
+      comparableProvider.setEndpoint?.(payload.providerEndpoint);
+      currentState.providerEndpoint = comparableProvider.getEndpoint?.() || "";
+      currentState.scanError = "";
+      showToast(currentState, currentState.providerEndpoint ? "Provider endpoint saved." : "Provider endpoint cleared.");
     }
   }
 
@@ -572,6 +659,30 @@ export function mountApp({
   function resetForm(currentState) {
     currentState.editingId = null;
     currentState.pendingPhotoDataUrl = "";
+  }
+
+  async function scanComparables(itemId, currentState) {
+    const item = service.getById(itemId);
+
+    if (!item) {
+      return;
+    }
+
+    currentState.scanError = "";
+    currentState.scanningItemId = itemId;
+    render(currentState);
+
+    try {
+      const candidates = await comparableProvider.scanCandidates(item);
+      service.addComparableCandidates(itemId, candidates);
+      showToast(currentState, `${candidates.length} candidates ready for review.`);
+    } catch (error) {
+      currentState.scanError = error.message || "Comparable scan failed.";
+      render(currentState);
+    } finally {
+      currentState.scanningItemId = "";
+      render(currentState);
+    }
   }
 
   function showToast(currentState, message) {

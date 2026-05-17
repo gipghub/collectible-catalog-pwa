@@ -1,5 +1,9 @@
 import { createCollectible, matchesCollectible, updateCollectible } from "../domain/collectible.js";
-import { createComparable } from "../domain/comparable.js";
+import {
+  candidateToComparable,
+  createComparable,
+  createComparableCandidate
+} from "../domain/comparable.js";
 
 export function createCatalogService(repository) {
   let items = repository.load().map((item) => createCollectible(item, new Date(item.updatedAt || Date.now())));
@@ -69,6 +73,85 @@ export function createCatalogService(repository) {
       items = items.map((item) => (item.id === itemId ? updated : item));
       publish();
       return comparable;
+    },
+
+    addComparableCandidates(itemId, inputs) {
+      const existing = this.getById(itemId);
+
+      if (!existing) {
+        return [];
+      }
+
+      const candidates = inputs.map((input) => createComparableCandidate(input));
+      const comparableCandidates = mergeCandidates(existing.comparableCandidates, candidates);
+      const updated = updateCollectible(existing, { comparableCandidates });
+
+      items = items.map((item) => (item.id === itemId ? updated : item));
+      publish();
+      return candidates;
+    },
+
+    acceptComparableCandidate(itemId, candidateId) {
+      const existing = this.getById(itemId);
+      const candidate = existing?.comparableCandidates.find((item) => item.id === candidateId);
+
+      if (!existing || !candidate || candidate.status === "accepted") {
+        return null;
+      }
+
+      const now = new Date();
+      const comparable = candidateToComparable(candidate, now);
+      const comparableCandidates = existing.comparableCandidates.map((item) =>
+        item.id === candidateId
+          ? { ...item, status: "accepted", reviewedAt: now.toISOString() }
+          : item
+      );
+      const updated = updateCollectible(existing, {
+        comparables: [comparable, ...existing.comparables],
+        comparableCandidates
+      });
+
+      items = items.map((item) => (item.id === itemId ? updated : item));
+      publish();
+      return comparable;
+    },
+
+    rejectComparableCandidate(itemId, candidateId) {
+      const existing = this.getById(itemId);
+
+      if (!existing) {
+        return null;
+      }
+
+      const now = new Date();
+      const comparableCandidates = existing.comparableCandidates.map((candidate) =>
+        candidate.id === candidateId
+          ? { ...candidate, status: "rejected", reviewedAt: now.toISOString() }
+          : candidate
+      );
+      const updated = updateCollectible(existing, { comparableCandidates });
+
+      items = items.map((item) => (item.id === itemId ? updated : item));
+      publish();
+      return updated;
     }
   };
+}
+
+function mergeCandidates(existingCandidates = [], newCandidates = []) {
+  const reviewedCandidates = existingCandidates.filter((candidate) => candidate.status !== "pending");
+  const pendingCandidates = existingCandidates.filter((candidate) => candidate.status === "pending");
+  const mergedPending = [...newCandidates, ...pendingCandidates];
+  const seen = new Set();
+
+  return [...reviewedCandidates, ...mergedPending].filter((candidate) => {
+    const key = candidate.providerItemId || candidate.url || `${candidate.title}-${candidate.price}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }

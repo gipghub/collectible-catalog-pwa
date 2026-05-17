@@ -11,6 +11,36 @@ export function createComparable(input, now = new Date()) {
   };
 }
 
+export function createComparableCandidate(input, now = new Date()) {
+  return {
+    id: input.id || crypto.randomUUID(),
+    providerItemId: cleanText(input.providerItemId),
+    source: cleanText(input.source, "Provider"),
+    title: cleanText(input.title, "Comparable candidate"),
+    price: toNumber(input.price),
+    url: cleanText(input.url),
+    soldAt: input.soldAt || "",
+    condition: cleanText(input.condition),
+    confidence: clampConfidence(input.confidence),
+    matchNotes: cleanText(input.matchNotes),
+    status: normalizeCandidateStatus(input.status),
+    createdAt: input.createdAt || now.toISOString(),
+    reviewedAt: input.reviewedAt || ""
+  };
+}
+
+export function candidateToComparable(candidate, now = new Date()) {
+  return createComparable({
+    source: candidate.source,
+    title: candidate.title,
+    price: candidate.price,
+    url: candidate.url,
+    soldAt: candidate.soldAt,
+    notes: candidate.matchNotes,
+    createdAt: now.toISOString()
+  }, now);
+}
+
 export function buildComparableQuery(item) {
   return [item.title, item.maker, item.series, item.category]
     .map((part) => cleanText(part))
@@ -50,4 +80,18 @@ function cleanText(value, fallback = "") {
 function toNumber(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function clampConfidence(value) {
+  const confidence = Number(value);
+
+  if (!Number.isFinite(confidence)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(confidence)));
+}
+
+function normalizeCandidateStatus(value) {
+  return ["pending", "accepted", "rejected"].includes(value) ? value : "pending";
 }
