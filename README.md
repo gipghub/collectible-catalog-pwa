@@ -27,6 +27,8 @@ If that port is already in use, run the same command with another port, for exam
 
 The app stores catalog data in the browser with `localStorage`. Photos are resized in-browser before storage.
 
+Production sync can be enabled by defining `window.COLLECTIBLE_APP_CONFIG` before `src/main.js` loads. Without that config, the app stays in local-only mode. See [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md).
+
 ## What Is Included
 
 - Mobile-friendly PWA shell for web and mobile browser use.
@@ -44,18 +46,19 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 - Yard sale planner with Sell/Unsure/Donated/Sold status, asking price, private floor price, sold price, and sale notes.
 - Printable public price tags plus a private seller sheet for sale-day tracking.
 - Printable labels with catalog code, item URL, and Code 128 barcode.
+- Sync-ready repository boundary with visible local/sync status in the app header.
 - Clean Code-oriented folder structure:
   - `src/domain`: business rules and entities.
   - `src/application`: app use cases and state orchestration.
-  - `src/infrastructure`: browser storage, barcode, image, and search-provider adapters.
+  - `src/infrastructure`: browser storage, sync, barcode, image, and search-provider adapters.
   - `src/ui`: DOM rendering and interaction logic.
 
 ## Next Product Milestones
 
-1. Replace browser-only storage with a synced backend.
+1. Implement the authenticated backend described in `docs/BACKEND_CONTRACT.md`.
 2. Add user accounts, collection sharing, and cloud photo storage.
 3. Add a hosted comparable provider endpoint with eBay Marketplace Insights, WorthPoint, or auction-house credentials stored server-side.
 4. Add QR labels and printer presets for Avery-style label sheets.
 5. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.

@@ -22,6 +22,20 @@ This starter is a Progressive Web App. It runs on desktop browsers and mobile br
 `ui`
 : Renders screens, handles DOM events, and delegates business decisions to application services.
 
+## Production Sync Boundary
+
+The app now starts through a configuration-driven repository boundary. It always loads a local repository first so a family member can keep cataloging even without a network connection. When `window.COLLECTIBLE_APP_CONFIG.syncEnabled` and `apiBaseUrl` are present, the local repository is wrapped by a sync repository that talks to a remote catalog API.
+
+Sync behavior is intentionally conservative:
+
+- Local records remain the source of immediate UI responsiveness.
+- Saves are written locally before any network call.
+- Manual sync merges local and remote records by `id`.
+- When the same item exists in both places, the newest `updatedAt` wins.
+- Sync status is visible in the app header as local-only, ready, pending, synced, syncing, or issue.
+
+See `docs/BACKEND_CONTRACT.md` for the first backend endpoint contract.
+
 ## Comparable Search Boundary
 
 The app does not scrape websites. Automated marketplace scraping often violates terms of service, breaks under layout changes, and is difficult to make reliable. Instead, the app creates focused research links and supports an approved comparable provider endpoint.

@@ -19,6 +19,11 @@ export function createCatalogService(repository) {
     subscribers.forEach((subscriber) => subscriber(getItems()));
   }
 
+  function replaceItems(nextItems) {
+    items = nextItems.map((item) => createCollectible(item, new Date(item.updatedAt || Date.now())));
+    subscribers.forEach((subscriber) => subscriber(getItems()));
+  }
+
   function getItems() {
     return sortCollectibles(items);
   }
@@ -140,6 +145,35 @@ export function createCatalogService(repository) {
       items = items.map((item) => (item.id === itemId ? updated : item));
       publish();
       return updated;
+    },
+
+    async syncNow() {
+      if (!repository.syncNow) {
+        return getItems();
+      }
+
+      const syncedItems = await repository.syncNow(items);
+      replaceItems(syncedItems);
+      return getItems();
+    },
+
+    getSyncStatus() {
+      return repository.getSyncStatus?.() || {
+        mode: "local",
+        isSyncing: false,
+        lastSyncedAt: "",
+        pendingChanges: false,
+        error: ""
+      };
+    },
+
+    subscribeSyncStatus(subscriber) {
+      if (!repository.subscribeSyncStatus) {
+        subscriber(this.getSyncStatus());
+        return () => {};
+      }
+
+      return repository.subscribeSyncStatus(subscriber);
     }
   };
 }

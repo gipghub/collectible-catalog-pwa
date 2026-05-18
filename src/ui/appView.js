@@ -40,6 +40,7 @@ export function mountApp({
     selectedId: null,
     saleListItemIds: [],
     sortBy: "updated-desc",
+    syncStatus: service.getSyncStatus?.() || createLocalSyncStatus(),
     toast: ""
   };
 
@@ -50,6 +51,10 @@ export function mountApp({
   window.addEventListener("hashchange", () => openItemFromHash(state));
 
   service.subscribe(() => render(state));
+  service.subscribeSyncStatus?.((syncStatus) => {
+    state.syncStatus = syncStatus;
+    render(state);
+  });
   openItemFromHash(state);
 
   function render(currentState) {
@@ -124,6 +129,7 @@ export function mountApp({
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
             Labels
           </button>
+          ${renderSyncButton(currentState.syncStatus)}
           <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Toggle dark mode" title="Toggle dark mode">
             ${currentState.profile.theme === "dark"
               ? `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M3 12h2M19 12h2M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path></svg>`
@@ -141,6 +147,20 @@ export function mountApp({
         </div>
         <p class="result-count">${filteredCount} shown</p>
       </header>
+    `;
+  }
+
+  function renderSyncButton(syncStatus) {
+    const status = syncStatus || createLocalSyncStatus();
+    const isSyncing = status.isSyncing;
+    const label = getSyncLabel(status);
+    const title = getSyncTitle(status);
+
+    return `
+      <button class="sync-button ${escapeAttribute(status.mode)}" type="button" data-action="sync-now" ${isSyncing ? "disabled" : ""} title="${escapeAttribute(title)}">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.36 6.36L3 15.72M3 12A9 9 0 0 1 18.36 5.64L21 8.28M3 20v-4.28h4.28M16.72 8.28H21V4"></path></svg>
+        <span>${escapeHtml(label)}</span>
+      </button>
     `;
   }
 
@@ -946,6 +966,10 @@ export function mountApp({
       root.querySelector("#yardSale")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
+    if (action === "sync-now") {
+      await syncCatalog(currentState);
+    }
+
     if (action === "open-profile") {
       currentState.isProfileOpen = true;
       render(currentState);
@@ -1249,6 +1273,21 @@ export function mountApp({
     }
   }
 
+  async function syncCatalog(currentState) {
+    if (!service.syncNow) {
+      showToast(currentState, "Catalog is stored on this device.");
+      return;
+    }
+
+    try {
+      await service.syncNow();
+      const status = service.getSyncStatus?.() || createLocalSyncStatus();
+      showToast(currentState, getSyncToast(status));
+    } catch (error) {
+      showToast(currentState, error.message || "Catalog sync failed.");
+    }
+  }
+
   function showToast(currentState, message) {
     currentState.toast = message;
     render(currentState);
@@ -1375,6 +1414,68 @@ function roundYardSalePrice(value) {
   }
 
   return Math.max(0.5, Math.round(value * 4) / 4);
+}
+
+function createLocalSyncStatus() {
+  return {
+    mode: "local",
+    isSyncing: false,
+    lastSyncedAt: "",
+    pendingChanges: false,
+    error: ""
+  };
+}
+
+function getSyncLabel(status) {
+  if (status.isSyncing) {
+    return "Syncing";
+  }
+
+  if (status.mode === "synced") {
+    return "Synced";
+  }
+
+  if (status.mode === "pending") {
+    return "Sync pending";
+  }
+
+  if (status.mode === "error") {
+    return "Sync issue";
+  }
+
+  if (status.mode === "ready") {
+    return "Sync ready";
+  }
+
+  return "Local only";
+}
+
+function getSyncTitle(status) {
+  if (status.error) {
+    return status.error;
+  }
+
+  if (status.lastSyncedAt) {
+    return `Last synced ${new Date(status.lastSyncedAt).toLocaleString()}`;
+  }
+
+  if (status.mode === "local") {
+    return "Catalog is stored on this device until a backend endpoint is configured.";
+  }
+
+  return "Sync catalog now";
+}
+
+function getSyncToast(status) {
+  if (status.mode === "local") {
+    return "Catalog is stored on this device.";
+  }
+
+  if (status.mode === "error") {
+    return status.error || "Catalog sync failed.";
+  }
+
+  return "Catalog sync complete.";
 }
 
 function formToObject(form) {

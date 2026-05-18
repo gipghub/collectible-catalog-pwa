@@ -166,6 +166,51 @@ svg {
   white-space: nowrap;
 }
 
+.sync-button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 11px;
+  color: var(--ink);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.sync-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sync-button.synced {
+  color: #ffffff;
+  background: var(--green);
+  border-color: transparent;
+}
+
+.sync-button.pending,
+.sync-button.syncing,
+.sync-button.ready {
+  color: var(--ink);
+  background: #fff8e6;
+  border-color: #ead492;
+}
+
+.sync-button.error {
+  color: #ffffff;
+  background: var(--coral);
+  border-color: transparent;
+}
+
+.sync-button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .result-count {
   margin: 0;
   color: var(--muted);
@@ -1238,6 +1283,7 @@ svg {
   }
 
   .profile-button,
+  .sync-button,
   .header-actions > .icon-button,
   .button {
     width: 100%;
