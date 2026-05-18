@@ -1,6 +1,7 @@
 const DEFAULT_CONFIG = {
   apiBaseUrl: "",
   apiToken: "",
+  authEnabled: false,
   collectionId: "default",
   photoUploadEnabled: false,
   syncEnabled: false
@@ -9,6 +10,7 @@ const DEFAULT_CONFIG = {
 export function loadAppConfig(source = globalThis.COLLECTIBLE_APP_CONFIG || {}) {
   const apiBaseUrl = cleanUrl(source.apiBaseUrl);
   const apiToken = cleanText(source.apiToken);
+  const authEnabled = Boolean(source.authEnabled && apiBaseUrl);
   const collectionId = cleanText(source.collectionId, DEFAULT_CONFIG.collectionId);
   const syncEnabled = Boolean(source.syncEnabled && apiBaseUrl);
   const photoUploadEnabled = Boolean(source.photoUploadEnabled && apiBaseUrl);
@@ -17,6 +19,7 @@ export function loadAppConfig(source = globalThis.COLLECTIBLE_APP_CONFIG || {}) 
     ...DEFAULT_CONFIG,
     apiBaseUrl,
     apiToken,
+    authEnabled,
     collectionId,
     photoUploadEnabled,
     syncEnabled

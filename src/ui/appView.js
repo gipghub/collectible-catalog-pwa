@@ -2,7 +2,9 @@ import {
   CATALOG_SORT_OPTIONS,
   CATEGORIES,
   CONDITIONS,
+  LISTING_STATUS_OPTIONS,
   SALE_STATUS_OPTIONS,
+  SALE_SITE_OPTIONS,
   formatMoney
 } from "../domain/collectible.js";
 import { summarizeComparables } from "../domain/comparable.js";
@@ -18,13 +20,31 @@ import {
 
 export function mountApp({
   root,
+  appConfig,
+  authClient,
+  sessionRepository,
   service,
   profileRepository,
   imageReader,
   comparableProvider,
   createBarcodeSvg
 }) {
+  const configuredSession = appConfig.apiToken
+    ? {
+        token: appConfig.apiToken,
+        collectionId: appConfig.collectionId,
+        user: {
+          email: "",
+          displayName: "Signed in"
+        }
+      }
+    : null;
+  const savedSession = sessionRepository?.load?.();
   const state = {
+    authError: "",
+    authRequired: Boolean(appConfig.authEnabled),
+    authSession: savedSession || configuredSession,
+    authSubmitting: false,
     category: "All",
     editingId: null,
     isProfileOpen: false,
@@ -61,6 +81,11 @@ export function mountApp({
 
   function render(currentState) {
     applyTheme(currentState.profile.theme);
+
+    if (currentState.authRequired && !currentState.authSession?.token) {
+      root.innerHTML = renderSignInScreen(currentState);
+      return;
+    }
 
     const allItems = service.list();
     const filteredItems = service.list(getCatalogQuery(currentState));
@@ -144,6 +169,12 @@ export function mountApp({
             Labels
           </button>
           ${renderSyncButton(currentState.syncStatus)}
+          ${currentState.authRequired ? `
+            <button class="button secondary" type="button" data-action="sign-out">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17 15 12l-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-4"></path></svg>
+              Sign Out
+            </button>
+          ` : ""}
           <button class="icon-button" type="button" data-action="toggle-theme" aria-label="Toggle dark mode" title="Toggle dark mode">
             ${currentState.profile.theme === "dark"
               ? `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M3 12h2M19 12h2M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path></svg>`
@@ -161,6 +192,35 @@ export function mountApp({
         </div>
         <p class="result-count">${filteredCount} shown</p>
       </header>
+    `;
+  }
+
+  function renderSignInScreen(currentState) {
+    return `
+      <main class="auth-shell">
+        <section class="auth-card">
+          <div>
+            <p class="eyebrow">Cloud catalog</p>
+            <h1>Sign In</h1>
+            <p>Use the family catalog account to sync items and upload photos from this device.</p>
+          </div>
+          <form class="auth-form" data-role="auth-form">
+            <label class="field">
+              <span>Email</span>
+              <input name="email" type="email" autocomplete="email" placeholder="collector@example.com" required>
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input name="password" type="password" autocomplete="current-password" placeholder="catalog-demo" required>
+            </label>
+            ${currentState.authError ? `<p class="error-text">${escapeHtml(currentState.authError)}</p>` : ""}
+            <button class="button primary" type="submit" ${currentState.authSubmitting ? "disabled" : ""}>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+              ${currentState.authSubmitting ? "Signing In..." : "Sign In"}
+            </button>
+          </form>
+        </section>
+      </main>
     `;
   }
 
@@ -328,7 +388,12 @@ export function mountApp({
           ${renderTextField("askingPrice", "Asking price", editingItem?.askingPrice || "", "25", "number")}
           ${renderTextField("lowestPrice", "Private floor price", editingItem?.lowestPrice || "", "15", "number")}
           ${renderTextField("soldPrice", "Sold price", editingItem?.soldPrice || "", "20", "number")}
+          ${renderSelectField("listingStatus", "Listing status", LISTING_STATUS_OPTIONS, editingItem?.listingStatus || "Not Listed")}
+          ${renderSelectField("saleSite", "Sale site", SALE_SITE_OPTIONS, editingItem?.saleSite || "Not set")}
+          ${renderTextField("listedAt", "Listed date", editingItem?.listedAt || "", "", "date")}
+          ${renderTextField("soldVia", "Sold via", editingItem?.soldVia || "", "Facebook, eBay, yard sale")}
         </div>
+        ${renderTextField("listingUrl", "Listing URL", editingItem?.listingUrl || "", "https://")}
         <label class="field">
           <span>Sale notes</span>
           <textarea name="saleNotes" rows="2" placeholder="Box location, bundle idea, hold request">${escapeHtml(editingItem?.saleNotes || "")}</textarea>
@@ -436,6 +501,8 @@ export function mountApp({
               <div><dt>Asking</dt><dd>${formatMoney(item.askingPrice, currentState.profile.currency)}</dd></div>
               <div><dt>Private floor</dt><dd>${formatMoney(item.lowestPrice, currentState.profile.currency)}</dd></div>
               <div><dt>Sold</dt><dd>${formatMoney(item.soldPrice, currentState.profile.currency)}</dd></div>
+              <div><dt>Listing</dt><dd>${escapeHtml(getListingLabel(item))}</dd></div>
+              <div><dt>Sold via</dt><dd>${escapeHtml(item.soldVia || "Not set")}</dd></div>
             </dl>
             ${item.notes ? `<p class="notes">${escapeHtml(item.notes)}</p>` : ""}
             ${item.saleNotes ? `<p class="notes sale-notes">${escapeHtml(item.saleNotes)}</p>` : ""}
@@ -667,6 +734,7 @@ export function mountApp({
         <div class="sale-status-block">
           <span class="sale-status">${escapeHtml(item.saleStatus)}</span>
           <small>${escapeHtml(marketLabel)}</small>
+          <small>${escapeHtml(getListingLabel(item))}</small>
         </div>
         <dl class="sale-price-grid">
           <div><dt>Ask</dt><dd>${escapeHtml(askingLabel)}</dd></div>
@@ -684,6 +752,7 @@ export function mountApp({
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12v8h16v-8M12 16V3m0 0 5 5m-5-5-5 5"></path></svg>
             Share
           </button>
+          ${item.listingUrl ? `<a class="button secondary compact-action" href="${escapeAttribute(item.listingUrl)}" target="_blank" rel="noreferrer">Listing</a>` : ""}
         </div>
       </article>
     `;
@@ -729,6 +798,10 @@ export function mountApp({
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 8h12v12H8z"></path><path d="M4 16V4h12"></path></svg>
               Copy
             </button>
+            <button class="button secondary" type="button" data-action="mark-listed" data-id="${escapeAttribute(item.id)}">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+              Mark Listed
+            </button>
             <button class="button secondary" type="button" data-action="copy-sale-link" data-url="${escapeAttribute(itemUrl)}">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
               Copy Link
@@ -736,7 +809,7 @@ export function mountApp({
           </div>
           <div class="sale-channel-grid" aria-label="Selling site shortcuts">
             ${listing.channels.map((channel) => `
-              <button type="button" data-action="open-sale-channel" data-id="${escapeAttribute(item.id)}" data-url="${escapeAttribute(channel.url)}">
+              <button type="button" data-action="open-sale-channel" data-id="${escapeAttribute(item.id)}" data-channel="${escapeAttribute(channel.name)}" data-url="${escapeAttribute(channel.url)}">
                 <span>${escapeHtml(channel.name)}</span>
                 <small>Copy text, then open</small>
               </button>
@@ -941,6 +1014,8 @@ export function mountApp({
                 <th>Ask</th>
                 <th>Private Floor</th>
                 <th>Sold</th>
+                <th>Listing</th>
+                <th>Sold Via</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -954,6 +1029,8 @@ export function mountApp({
                   <td>${escapeHtml(formatMoney(item.askingPrice, currentState.profile.currency))}</td>
                   <td>${escapeHtml(formatMoney(item.lowestPrice, currentState.profile.currency))}</td>
                   <td>${escapeHtml(formatMoney(item.soldPrice, currentState.profile.currency))}</td>
+                  <td>${escapeHtml(getListingLabel(item))}</td>
+                  <td>${escapeHtml(item.soldVia || "")}</td>
                   <td>${escapeHtml(item.saleNotes || "")}</td>
                 </tr>
               `).join("")}
@@ -1049,6 +1126,11 @@ export function mountApp({
       await syncCatalog(currentState);
     }
 
+    if (action === "sign-out") {
+      sessionRepository?.clear?.();
+      window.location.reload();
+    }
+
     if (action === "open-profile") {
       currentState.isProfileOpen = true;
       render(currentState);
@@ -1113,8 +1195,16 @@ export function mountApp({
       await shareSaleListing(id, currentState);
     }
 
+    if (action === "mark-listed") {
+      markItemListed(id, currentState, { saleSite: "Other" });
+      showToast(currentState, "Listing marked as listed.");
+    }
+
     if (action === "open-sale-channel") {
       await copySaleListing(id, currentState, { quiet: true });
+      markItemListed(id, currentState, {
+        saleSite: actionTarget.dataset.channel || "Other"
+      });
       window.open(actionTarget.dataset.url, "_blank", "noopener,noreferrer");
       showToast(currentState, "Listing copied. Paste it into the sale site.");
     }
@@ -1217,11 +1307,18 @@ export function mountApp({
     }
   }
 
-  function handleSubmit(event, currentState) {
+  async function handleSubmit(event, currentState) {
+    const authForm = event.target.closest("[data-role='auth-form']");
     const catalogForm = event.target.closest("[data-role='catalog-form']");
     const comparableForm = event.target.closest("[data-role='comparable-form']");
     const profileForm = event.target.closest("[data-role='profile-form']");
     const providerForm = event.target.closest("[data-role='provider-form']");
+
+    if (authForm) {
+      event.preventDefault();
+      await signIn(currentState, formToObject(authForm));
+      return;
+    }
 
     if (profileForm) {
       event.preventDefault();
@@ -1400,6 +1497,24 @@ export function mountApp({
     }
   }
 
+  async function signIn(currentState, input) {
+    currentState.authSubmitting = true;
+    currentState.authError = "";
+    render(currentState);
+
+    try {
+      const session = await authClient.login(input);
+      sessionRepository?.save?.(session);
+      currentState.authSession = session;
+      showToast(currentState, "Signed in. Loading cloud catalog.");
+      window.location.reload();
+    } catch (error) {
+      currentState.authError = error.message || "Sign in failed.";
+      currentState.authSubmitting = false;
+      render(currentState);
+    }
+  }
+
   async function copySaleListing(itemId, currentState, { quiet = false } = {}) {
     const item = service.getById(itemId);
 
@@ -1452,6 +1567,24 @@ export function mountApp({
     showToast(currentState, "Sharing is not available here, so the listing was copied.");
   }
 
+  function markItemListed(itemId, currentState, { saleSite }) {
+    const item = service.getById(itemId);
+
+    if (!item) {
+      return;
+    }
+
+    service.update(itemId, {
+      listingStatus: "Listed",
+      saleSite: SALE_SITE_OPTIONS.includes(saleSite) ? saleSite : "Other",
+      listedAt: item.listedAt || new Date().toISOString().slice(0, 10)
+    });
+
+    if (currentState.saleShareItemId === itemId) {
+      currentState.saleShareItemId = itemId;
+    }
+  }
+
   function showToast(currentState, message) {
     currentState.toast = message;
     render(currentState);
@@ -1493,6 +1626,13 @@ function getYardSaleItems(items) {
       || compareMoneyForSort(left.askingPrice, right.askingPrice)
       || left.title.localeCompare(right.title, undefined, { sensitivity: "base", numeric: true })
     );
+}
+
+function getListingLabel(item) {
+  const status = item.listingStatus || "Not Listed";
+  const site = item.saleSite && item.saleSite !== "Not set" ? ` on ${item.saleSite}` : "";
+  const date = item.listedAt ? ` (${item.listedAt})` : "";
+  return `${status}${site}${date}`;
 }
 
 function getYardSaleStats(items) {

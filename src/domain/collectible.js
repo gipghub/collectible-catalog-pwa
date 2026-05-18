@@ -29,6 +29,26 @@ export const SALE_STATUS_OPTIONS = [
   "Sold"
 ];
 
+export const LISTING_STATUS_OPTIONS = [
+  "Not Listed",
+  "Drafted",
+  "Listed",
+  "Paused",
+  "Sold",
+  "Expired"
+];
+
+export const SALE_SITE_OPTIONS = [
+  "Not set",
+  "Facebook Marketplace",
+  "eBay",
+  "Craigslist",
+  "OfferUp",
+  "Nextdoor",
+  "Yard Sale",
+  "Other"
+];
+
 export const CATALOG_SORT_OPTIONS = [
   { value: "updated-desc", label: "Recently updated" },
   { value: "title-asc", label: "Title A-Z" },
@@ -61,6 +81,11 @@ export function createCollectible(input, now = new Date()) {
     askingPrice: toNumberOrEmpty(input.askingPrice),
     lowestPrice: toNumberOrEmpty(input.lowestPrice),
     soldPrice: toNumberOrEmpty(input.soldPrice),
+    listingStatus: normalizeListingStatus(input.listingStatus),
+    saleSite: normalizeSaleSite(input.saleSite),
+    listingUrl: cleanText(input.listingUrl),
+    listedAt: input.listedAt || "",
+    soldVia: cleanText(input.soldVia),
     saleNotes: cleanText(input.saleNotes),
     tags: normalizeTags(input.tags),
     notes: cleanText(input.notes),
@@ -104,6 +129,10 @@ export function matchesCollectible(item, query, category) {
     item.series,
     item.condition,
     item.saleStatus,
+    item.listingStatus,
+    item.saleSite,
+    item.listingUrl,
+    item.soldVia,
     item.saleNotes,
     item.notes,
     item.tags.join(" ")
@@ -276,6 +305,14 @@ function normalizeTags(value) {
 
 function normalizeSaleStatus(value) {
   return SALE_STATUS_OPTIONS.includes(value) ? value : "Keep";
+}
+
+function normalizeListingStatus(value) {
+  return LISTING_STATUS_OPTIONS.includes(value) ? value : "Not Listed";
+}
+
+function normalizeSaleSite(value) {
+  return SALE_SITE_OPTIONS.includes(value) ? value : "Not set";
 }
 
 function toNumberOrEmpty(value) {

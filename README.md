@@ -74,6 +74,7 @@ npm run test:backend
 - Printable inventory lists that respect the current search, category filter, and sort order.
 - Yard sale planner with Sell/Unsure/Donated/Sold status, asking price, private floor price, sold price, and sale notes.
 - Share-for-sale workflow that creates ready-to-paste listings for Facebook Marketplace, eBay, Craigslist, OfferUp, Nextdoor, or the device share sheet.
+- Seller tracking for listing status, sale site, listing URL, listed date, and sold-via details.
 - Printable public price tags plus a private seller sheet for sale-day tracking.
 - Printable labels with catalog code, item URL, and Code 128 barcode.
 - Sync-ready repository boundary with visible local/sync status in the app header.
@@ -94,4 +95,4 @@ npm run test:backend
 5. Add QR labels and printer presets for Avery-style label sheets.
 6. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), [docs/CLOUD_STORAGE_PLAN.md](docs/CLOUD_STORAGE_PLAN.md), and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.

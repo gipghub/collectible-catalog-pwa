@@ -14,6 +14,8 @@ export function loadServerConfig(env = process.env) {
     port: toPort(env.PORT, DEFAULT_PORT),
     storageRoot,
     corsOrigin: cleanText(env.COLLECTIBLE_CORS_ORIGIN, "*"),
+    photoPublicBaseUrl: cleanUrl(env.COLLECTIBLE_PHOTO_PUBLIC_BASE_URL),
+    photoStorageProvider: cleanText(env.COLLECTIBLE_PHOTO_STORAGE_PROVIDER, "local"),
     defaultCollectionId,
     demoUser: {
       email: demoEmail,
@@ -33,4 +35,8 @@ function toPort(value, fallback) {
 function cleanText(value, fallback = "") {
   const text = typeof value === "string" ? value.trim() : "";
   return text || fallback;
+}
+
+function cleanUrl(value) {
+  return cleanText(value).replace(/\/+$/, "");
 }

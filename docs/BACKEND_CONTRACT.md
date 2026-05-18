@@ -9,16 +9,16 @@ The static client reads an optional global config before `src/main.js` runs:
 ```html
 <script>
   window.COLLECTIBLE_APP_CONFIG = {
+    authEnabled: true,
     syncEnabled: true,
     photoUploadEnabled: true,
     apiBaseUrl: "https://api.example.com",
-    apiToken: "user-session-token",
     collectionId: "family-collection"
   };
 </script>
 ```
 
-If `syncEnabled` or `apiBaseUrl` is missing, the app stays in local-only mode. If `photoUploadEnabled` is missing, photos stay as local resized data URLs.
+If `syncEnabled` or `apiBaseUrl` is missing, the app stays in local-only mode. If `photoUploadEnabled` is missing, photos stay as local resized data URLs. If `authEnabled` is true and no saved token exists, the app shows the sign-in screen and calls the login endpoint.
 
 ## Auth Endpoint
 
@@ -72,6 +72,11 @@ Response:
       "catalogCode": "COL-20260517-ABC123",
       "title": "1964 Kennedy half dollar",
       "category": "Coins",
+      "listingStatus": "Listed",
+      "saleSite": "Facebook Marketplace",
+      "listingUrl": "https://facebook.com/marketplace/item/example",
+      "listedAt": "2026-05-18",
+      "soldVia": "",
       "updatedAt": "2026-05-18T01:30:00.000Z"
     }
   ]

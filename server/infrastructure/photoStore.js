@@ -8,7 +8,7 @@ const ACCEPTED_IMAGE_TYPES = new Map([
   ["image/webp", ".webp"]
 ]);
 
-export function createPhotoStore({ storageRoot }) {
+export function createPhotoStore({ storageRoot, publicBaseUrl = "" }) {
   const photoRoot = join(storageRoot, "photos");
 
   return {
@@ -26,7 +26,8 @@ export function createPhotoStore({ storageRoot }) {
         fileName,
         contentType: parsed.contentType,
         size: parsed.buffer.length,
-        path: relativePath.replaceAll("\\", "/")
+        path: relativePath.replaceAll("\\", "/"),
+        url: publicBaseUrl ? `${publicBaseUrl}/${relativePath.replaceAll("\\", "/")}` : ""
       };
     }
   };

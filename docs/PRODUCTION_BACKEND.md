@@ -49,9 +49,29 @@ Add runtime config before `src/main.js` loads:
 
 With that config, catalog saves sync to the API and selected photos upload to `server/storage/photos`.
 
+To require sign-in instead of putting a token in the page config:
+
+```html
+<script>
+  window.COLLECTIBLE_APP_CONFIG = {
+    authEnabled: true,
+    syncEnabled: true,
+    photoUploadEnabled: true,
+    apiBaseUrl: "http://127.0.0.1:8787",
+    collectionId: "family-collection"
+  };
+</script>
+```
+
+The browser will call `POST /auth/login`, store the returned token locally, and reload into the synced catalog.
+
+Use **Sign Out** in the app header to clear the saved browser session.
+
 ## Current Storage
 
 Catalog JSON is stored in `server/storage/catalogs` and uploaded photos are stored in `server/storage/photos`. The folder is ignored by git except for `.gitkeep`.
+
+Set `COLLECTIBLE_PHOTO_PUBLIC_BASE_URL` when uploaded photo URLs should point at a public CDN or mounted object-storage URL. See [CLOUD_STORAGE_PLAN.md](CLOUD_STORAGE_PLAN.md).
 
 ## Hardening Before Real Users
 

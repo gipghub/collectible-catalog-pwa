@@ -8,7 +8,10 @@ import { createPhotoStore } from "./infrastructure/photoStore.js";
 const config = loadServerConfig();
 const authService = createAuthService({ demoUser: config.demoUser });
 const catalogStore = createCatalogStore({ storageRoot: config.storageRoot });
-const photoStore = createPhotoStore({ storageRoot: config.storageRoot });
+const photoStore = createPhotoStore({
+  storageRoot: config.storageRoot,
+  publicBaseUrl: config.photoPublicBaseUrl
+});
 const catalogController = createCatalogController({
   authService,
   catalogStore,

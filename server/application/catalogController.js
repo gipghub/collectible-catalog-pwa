@@ -26,7 +26,7 @@ export function createCatalogController({ authService, catalogStore, photoStore,
 
       sendJson(response, {
         ...photo,
-        url: `${publicBaseUrl(request)}/uploads/${photo.path}`
+        url: photo.url || `${publicBaseUrl(request)}/uploads/${photo.path}`
       }, 201);
     }
   };
