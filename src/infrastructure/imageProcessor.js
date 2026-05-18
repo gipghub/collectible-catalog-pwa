@@ -20,6 +20,50 @@ export async function readImageAsDataUrl(file, options = {}) {
   return canvas.toDataURL("image/jpeg", quality);
 }
 
+export function createConfiguredImageReader({ appConfig, fetchImpl = fetch, fallbackReader = readImageAsDataUrl }) {
+  return async function readConfiguredImage(file) {
+    const dataUrl = await fallbackReader(file);
+
+    if (!appConfig?.photoUploadEnabled || !appConfig.apiBaseUrl) {
+      return dataUrl;
+    }
+
+    try {
+      const response = await fetchImpl(getPhotoUploadUrl(appConfig), {
+        method: "POST",
+        headers: createHeaders(appConfig.apiToken),
+        body: JSON.stringify({
+          dataUrl,
+          fileName: file?.name || "collectible-photo.jpg"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Photo upload failed (${response.status})`);
+      }
+
+      const payload = await response.json();
+      return payload.url || dataUrl;
+    } catch (error) {
+      console.info("Cloud photo upload is unavailable; keeping the photo locally.", error);
+      return dataUrl;
+    }
+  };
+}
+
+function getPhotoUploadUrl(appConfig) {
+  const baseUrl = String(appConfig.apiBaseUrl || "").replace(/\/+$/, "");
+  const collectionId = encodeURIComponent(appConfig.collectionId || "default");
+  return `${baseUrl}/collections/${collectionId}/photos`;
+}
+
+function createHeaders(apiToken) {
+  return {
+    "Content-Type": "application/json",
+    ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {})
+  };
+}
+
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

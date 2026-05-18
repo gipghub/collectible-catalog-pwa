@@ -7,6 +7,7 @@ import {
 } from "../domain/collectible.js";
 import { summarizeComparables } from "../domain/comparable.js";
 import { createLabelViewModel } from "../domain/label.js";
+import { createSaleListing } from "../domain/saleListing.js";
 import {
   CURRENCY_OPTIONS,
   THEME_OPTIONS,
@@ -38,6 +39,7 @@ export function mountApp({
     scanningItemId: "",
     search: "",
     selectedId: null,
+    saleShareItemId: null,
     saleListItemIds: [],
     sortBy: "updated-desc",
     syncStatus: service.getSyncStatus?.() || createLocalSyncStatus(),
@@ -64,6 +66,7 @@ export function mountApp({
     const filteredItems = service.list(getCatalogQuery(currentState));
     const editingItem = currentState.editingId ? service.getById(currentState.editingId) : null;
     const selectedItem = currentState.selectedId ? service.getById(currentState.selectedId) : null;
+    const saleShareItem = currentState.saleShareItemId ? service.getById(currentState.saleShareItemId) : null;
     const labelItems = currentState.labelItemIds.map((id) => service.getById(id)).filter(Boolean);
     const priceTagItems = currentState.priceTagItemIds.map((id) => service.getById(id)).filter(Boolean);
     const printListItems = currentState.printListItemIds.map((id) => service.getById(id)).filter(Boolean);
@@ -79,6 +82,7 @@ export function mountApp({
       renderPriceTagWorkbench(priceTagItems, currentState),
       renderYardSalePrintWorkbench(saleListItems, currentState),
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
+      saleShareItem ? renderSaleShareDialog(saleShareItem, currentState) : "",
       currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
     ].join("");
@@ -101,6 +105,16 @@ export function mountApp({
         }
       });
       profileDialog.showModal();
+    }
+
+    if (saleShareItem) {
+      const saleShareDialog = root.querySelector("#saleShareDialog");
+      saleShareDialog.addEventListener("close", () => {
+        if (currentState.saleShareItemId) {
+          closeSaleShare(currentState);
+        }
+      });
+      saleShareDialog.showModal();
     }
   }
 
@@ -405,6 +419,9 @@ export function mountApp({
                 <button class="icon-button danger" type="button" data-action="delete-item" data-id="${escapeAttribute(item.id)}" aria-label="Delete item">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 16h10l1-16"></path></svg>
                 </button>
+                <button class="icon-button" type="button" data-action="open-sale-share" data-id="${escapeAttribute(item.id)}" aria-label="Share item for sale">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12v8h16v-8M12 16V3m0 0 5 5m-5-5-5 5"></path></svg>
+                </button>
                 <button class="icon-button" type="button" data-action="close-dialog" aria-label="Close details">
                   <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
                 </button>
@@ -663,8 +680,70 @@ export function mountApp({
           <button class="icon-button" type="button" data-action="print-selected-price-tag" data-id="${escapeAttribute(item.id)}" aria-label="Print price tag" ${isPriceTagItem(item) ? "" : "disabled"}>
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82ZM7.5 7.5h.01"></path></svg>
           </button>
+          <button class="button secondary compact-action" type="button" data-action="open-sale-share" data-id="${escapeAttribute(item.id)}" ${isPriceTagItem(item) ? "" : "disabled"}>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12v8h16v-8M12 16V3m0 0 5 5m-5-5-5 5"></path></svg>
+            Share
+          </button>
         </div>
       </article>
+    `;
+  }
+
+  function renderSaleShareDialog(item, currentState) {
+    const listing = createSaleListing(item, {
+      currency: currentState.profile.currency,
+      formatMoney
+    });
+    const itemUrl = `${window.location.href.split("#")[0]}#item=${encodeURIComponent(item.id)}`;
+
+    return `
+      <dialog class="sale-share-dialog" id="saleShareDialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Sell online</p>
+            <h2>Share Listing</h2>
+          </div>
+          <button class="icon-button" type="button" data-action="close-sale-share" aria-label="Close sale sharing">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="sale-share-layout">
+          <div class="sale-share-preview">
+            ${item.photoDataUrl ? `<img src="${escapeAttribute(item.photoDataUrl)}" alt="${escapeAttribute(item.title)}">` : `<div class="photo-empty">No photo</div>`}
+            <div>
+              <p class="code">${escapeHtml(item.catalogCode)}</p>
+              <h3>${escapeHtml(listing.title)}</h3>
+              <strong>${escapeHtml(listing.priceLabel)}</strong>
+            </div>
+          </div>
+          <label class="field">
+            <span>Ready-to-paste listing</span>
+            <textarea readonly rows="10">${escapeHtml(listing.description)}</textarea>
+          </label>
+          <div class="sale-share-actions">
+            <button class="button primary" type="button" data-action="share-sale-listing" data-id="${escapeAttribute(item.id)}">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12v8h16v-8M12 16V3m0 0 5 5m-5-5-5 5"></path></svg>
+              Share
+            </button>
+            <button class="button secondary" type="button" data-action="copy-sale-listing" data-id="${escapeAttribute(item.id)}">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 8h12v12H8z"></path><path d="M4 16V4h12"></path></svg>
+              Copy
+            </button>
+            <button class="button secondary" type="button" data-action="copy-sale-link" data-url="${escapeAttribute(itemUrl)}">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              Copy Link
+            </button>
+          </div>
+          <div class="sale-channel-grid" aria-label="Selling site shortcuts">
+            ${listing.channels.map((channel) => `
+              <button type="button" data-action="open-sale-channel" data-id="${escapeAttribute(item.id)}" data-url="${escapeAttribute(channel.url)}">
+                <span>${escapeHtml(channel.name)}</span>
+                <small>Copy text, then open</small>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      </dialog>
     `;
   }
 
@@ -1012,6 +1091,34 @@ export function mountApp({
       closeDetails(currentState);
     }
 
+    if (action === "open-sale-share") {
+      currentState.saleShareItemId = id;
+      render(currentState);
+    }
+
+    if (action === "close-sale-share") {
+      closeSaleShare(currentState);
+    }
+
+    if (action === "copy-sale-listing") {
+      await copySaleListing(id, currentState);
+    }
+
+    if (action === "copy-sale-link") {
+      await navigator.clipboard?.writeText(actionTarget.dataset.url || "");
+      showToast(currentState, "Catalog link copied.");
+    }
+
+    if (action === "share-sale-listing") {
+      await shareSaleListing(id, currentState);
+    }
+
+    if (action === "open-sale-channel") {
+      await copySaleListing(id, currentState, { quiet: true });
+      window.open(actionTarget.dataset.url, "_blank", "noopener,noreferrer");
+      showToast(currentState, "Listing copied. Paste it into the sale site.");
+    }
+
     if (action === "delete-item") {
       if (confirm("Delete this catalog entry?")) {
         service.remove(id);
@@ -1216,6 +1323,11 @@ export function mountApp({
     render(currentState);
   }
 
+  function closeSaleShare(currentState) {
+    currentState.saleShareItemId = null;
+    render(currentState);
+  }
+
   function openItemFromHash(currentState) {
     const params = new URLSearchParams(window.location.hash.replace("#", ""));
     const itemId = params.get("item");
@@ -1286,6 +1398,58 @@ export function mountApp({
     } catch (error) {
       showToast(currentState, error.message || "Catalog sync failed.");
     }
+  }
+
+  async function copySaleListing(itemId, currentState, { quiet = false } = {}) {
+    const item = service.getById(itemId);
+
+    if (!item) {
+      return;
+    }
+
+    const listing = createSaleListing(item, {
+      currency: currentState.profile.currency,
+      formatMoney
+    });
+
+    await navigator.clipboard?.writeText(listing.description);
+    if (!quiet) {
+      showToast(currentState, "Listing copied for Facebook, eBay, or other sale sites.");
+    }
+  }
+
+  async function shareSaleListing(itemId, currentState) {
+    const item = service.getById(itemId);
+
+    if (!item) {
+      return;
+    }
+
+    const listing = createSaleListing(item, {
+      currency: currentState.profile.currency,
+      formatMoney
+    });
+    const itemUrl = `${window.location.href.split("#")[0]}#item=${encodeURIComponent(item.id)}`;
+    const shareData = {
+      title: listing.title,
+      text: `${listing.shareText}\n\n${itemUrl}`,
+      url: itemUrl
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        showToast(currentState, "Listing shared.");
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    await navigator.clipboard?.writeText(`${listing.description}\n\n${itemUrl}`);
+    showToast(currentState, "Sharing is not available here, so the listing was copied.");
   }
 
   function showToast(currentState, message) {

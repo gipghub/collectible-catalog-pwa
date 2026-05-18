@@ -2,15 +2,17 @@ export function createRemoteCatalogRepository({
   apiBaseUrl,
   apiToken = "",
   collectionId = "default",
+  syncEnabled = false,
   fetchImpl = fetch
 }) {
   const baseUrl = String(apiBaseUrl || "").replace(/\/+$/, "");
+  const isConfigured = Boolean(syncEnabled && baseUrl);
 
   return {
-    isConfigured: Boolean(baseUrl),
+    isConfigured,
 
     async load() {
-      if (!baseUrl) {
+      if (!isConfigured) {
         return [];
       }
 
@@ -24,7 +26,7 @@ export function createRemoteCatalogRepository({
     },
 
     async save(items) {
-      if (!baseUrl) {
+      if (!isConfigured) {
         return;
       }
 

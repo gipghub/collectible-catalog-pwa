@@ -8,3 +8,5 @@ profile-settings.png
 catalog-print-list.png
 watermark-preview.png
 yard-sale-preview.png
+server/storage/*
+!server/storage/.gitkeep

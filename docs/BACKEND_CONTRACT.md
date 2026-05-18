@@ -10,6 +10,7 @@ The static client reads an optional global config before `src/main.js` runs:
 <script>
   window.COLLECTIBLE_APP_CONFIG = {
     syncEnabled: true,
+    photoUploadEnabled: true,
     apiBaseUrl: "https://api.example.com",
     apiToken: "user-session-token",
     collectionId: "family-collection"
@@ -17,7 +18,40 @@ The static client reads an optional global config before `src/main.js` runs:
 </script>
 ```
 
-If `syncEnabled` or `apiBaseUrl` is missing, the app stays in local-only mode.
+If `syncEnabled` or `apiBaseUrl` is missing, the app stays in local-only mode. If `photoUploadEnabled` is missing, photos stay as local resized data URLs.
+
+## Auth Endpoint
+
+### Login
+
+```http
+POST /auth/login
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "email": "collector@example.com",
+  "password": "catalog-demo"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "user-session-token",
+  "user": {
+    "email": "collector@example.com",
+    "displayName": "Family Collector"
+  },
+  "collectionId": "family-collection"
+}
+```
+
+The current static client still expects the token to be supplied through runtime config. A future UI pass should add a sign-in screen that calls this endpoint and stores the session securely.
 
 ## Catalog Sync Endpoint
 
@@ -70,7 +104,38 @@ The client keeps local data usable first, then merges local and remote records b
 
 ## Photo Storage
 
-The current app still stores resized photo data URLs inside catalog records. The next production step should move photos to object storage and replace `photoDataUrl` with metadata such as:
+When `photoUploadEnabled` is enabled, the browser uploads the resized image before saving the item and stores the returned URL in the existing photo field. This keeps the current UI compatible while moving the image bytes out of catalog records.
+
+### Upload Photo
+
+```http
+POST /collections/{collectionId}/photos
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "fileName": "front.jpg",
+  "dataUrl": "data:image/jpeg;base64,..."
+}
+```
+
+Response:
+
+```json
+{
+  "fileName": "2026-05-18-generated-id.jpg",
+  "contentType": "image/jpeg",
+  "size": 120345,
+  "path": "family-collection/2026-05-18-generated-id.jpg",
+  "url": "https://api.example.com/uploads/family-collection/2026-05-18-generated-id.jpg"
+}
+```
+
+The longer-term production shape should replace `photoDataUrl` with metadata such as:
 
 ```json
 {

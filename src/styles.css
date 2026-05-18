@@ -456,6 +456,11 @@ svg {
   border: 1px solid var(--line);
 }
 
+.button.compact-action {
+  min-height: 38px;
+  padding-inline: 10px;
+}
+
 .icon-button {
   width: 38px;
   height: 38px;
@@ -621,7 +626,8 @@ svg {
   box-shadow: 0 26px 70px rgba(31, 36, 40, 0.24);
 }
 
-.profile-dialog {
+.profile-dialog,
+.sale-share-dialog {
   width: min(620px, calc(100vw - 28px));
   padding: 0;
   border: 0;
@@ -629,13 +635,92 @@ svg {
   box-shadow: 0 26px 70px rgba(31, 36, 40, 0.24);
 }
 
-.profile-dialog::backdrop {
+.profile-dialog::backdrop,
+.sale-share-dialog::backdrop {
   background: rgba(0, 0, 0, 0.48);
 }
 
 .profile-form {
   padding: 22px;
   background: var(--surface);
+}
+
+.sale-share-dialog {
+  width: min(760px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 22px;
+  background: var(--surface);
+}
+
+.sale-share-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.sale-share-preview {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sale-share-preview img,
+.sale-share-preview .photo-empty {
+  width: 112px;
+  height: 92px;
+  min-height: 92px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.sale-share-preview h3 {
+  margin: 4px 0;
+  font-size: 18px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.sale-share-preview strong {
+  font-size: 20px;
+}
+
+.sale-share-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sale-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.sale-channel-grid button {
+  display: grid;
+  gap: 4px;
+  min-height: 68px;
+  padding: 12px;
+  color: var(--ink);
+  background: var(--panel-surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sale-channel-grid span {
+  font-weight: 900;
+}
+
+.sale-channel-grid small {
+  color: var(--muted);
+  font-weight: 750;
 }
 
 .profile-identity {
@@ -1302,8 +1387,16 @@ svg {
   .candidate-card,
   .sale-dashboard,
   .sale-card,
-  .sale-price-grid {
+  .sale-price-grid,
+  .sale-share-actions,
+  .sale-share-preview {
     grid-template-columns: 1fr;
+  }
+
+  .sale-share-preview img,
+  .sale-share-preview .photo-empty {
+    width: 100%;
+    height: 180px;
   }
 
   .candidate-actions,
@@ -1342,6 +1435,7 @@ svg {
   .app-shell,
   .toast,
   .yard-sale-workbench,
+  .sale-share-dialog,
   .label-workbench > .section-heading,
   .inventory-print-workbench > .section-heading,
   .price-tag-workbench > .section-heading,

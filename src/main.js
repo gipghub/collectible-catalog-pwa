@@ -3,7 +3,7 @@ import { loadAppConfig } from "./config/appConfig.js";
 import { createCatalogRepository } from "./infrastructure/catalogRepository.js";
 import { createRemoteCatalogRepository } from "./infrastructure/remoteCatalogRepository.js";
 import { createSyncingCatalogRepository } from "./infrastructure/syncingCatalogRepository.js";
-import { readImageAsDataUrl } from "./infrastructure/imageProcessor.js";
+import { createConfiguredImageReader } from "./infrastructure/imageProcessor.js";
 import { createMarketplaceComparableProvider } from "./infrastructure/marketplaceComparableProvider.js";
 import { createCode128BarcodeSvg } from "./infrastructure/barcode.js";
 import { createUserProfileRepository } from "./infrastructure/userProfileRepository.js";
@@ -20,7 +20,7 @@ mountApp({
   root: document.querySelector("#app"),
   service,
   profileRepository: createUserProfileRepository(),
-  imageReader: readImageAsDataUrl,
+  imageReader: createConfiguredImageReader({ appConfig }),
   comparableProvider: createMarketplaceComparableProvider(),
   createBarcodeSvg: createCode128BarcodeSvg
 });
