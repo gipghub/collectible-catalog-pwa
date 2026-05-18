@@ -27,10 +27,12 @@ export function createSyncingCatalogRepository({
     return { ...syncStatus };
   }
 
-  async function syncItems(items = localRepository.load()) {
+  async function syncItems(items = null) {
+    const localItems = items || await localRepository.load();
+
     if (!remoteRepository?.isConfigured) {
       setSyncStatus({ mode: "local", isSyncing: false, pendingChanges: false, error: "" });
-      return items;
+      return localItems;
     }
 
     if (activeSync) {
@@ -41,9 +43,10 @@ export function createSyncingCatalogRepository({
 
     activeSync = remoteRepository.load()
       .then((remoteItems) => {
-        const mergedItems = mergeCatalogItems(items, remoteItems);
-        localRepository.save(mergedItems);
-        return remoteRepository.save(mergedItems).then(() => mergedItems);
+        const mergedItems = mergeCatalogItems(localItems, remoteItems);
+        return Promise.resolve(localRepository.save(mergedItems))
+          .then(() => remoteRepository.save(mergedItems))
+          .then(() => mergedItems);
       })
       .then((mergedItems) => {
         setSyncStatus({
@@ -62,7 +65,7 @@ export function createSyncingCatalogRepository({
           pendingChanges: true,
           error: error.message || "Catalog sync failed."
         });
-        return items;
+        return localItems;
       })
       .finally(() => {
         activeSync = null;
@@ -72,12 +75,19 @@ export function createSyncingCatalogRepository({
   }
 
   return {
-    load() {
+    async load() {
       return localRepository.load();
     },
 
     save(items) {
-      localRepository.save(items);
+      Promise.resolve(localRepository.save(items)).catch((error) => {
+        setSyncStatus({
+          mode: "error",
+          isSyncing: false,
+          pendingChanges: true,
+          error: error.message || "Local catalog save failed."
+        });
+      });
 
       if (!remoteRepository?.isConfigured) {
         setSyncStatus({ mode: "local", pendingChanges: false, error: "" });

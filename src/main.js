@@ -24,7 +24,7 @@ const catalogRepository = createSyncingCatalogRepository({
   localRepository: createCatalogRepository(),
   remoteRepository: createRemoteCatalogRepository(appConfig)
 });
-const service = createCatalogService(catalogRepository);
+const service = await createCatalogService(catalogRepository);
 
 mountApp({
   root: document.querySelector("#app"),

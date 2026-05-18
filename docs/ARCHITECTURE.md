@@ -24,7 +24,7 @@ This starter is a Progressive Web App. It runs on desktop browsers and mobile br
 
 ## Production Sync Boundary
 
-The app now starts through a configuration-driven repository boundary. It always loads a local repository first so a family member can keep cataloging even without a network connection. When `window.COLLECTIBLE_APP_CONFIG.syncEnabled` and `apiBaseUrl` are present, the local repository is wrapped by a sync repository that talks to a remote catalog API.
+The app now starts through a configuration-driven repository boundary. It always loads a local IndexedDB repository first so a family member can keep cataloging even without a network connection. Older `localStorage` catalog data is migrated into IndexedDB on first load. When `window.COLLECTIBLE_APP_CONFIG.syncEnabled` and `apiBaseUrl` are present, the local repository is wrapped by a sync repository that talks to a remote catalog API.
 
 Sync behavior is intentionally conservative:
 

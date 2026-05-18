@@ -25,7 +25,7 @@ http://127.0.0.1:4173
 
 If that port is already in use, run the same command with another port, for example `4175`.
 
-The app stores catalog data in the browser with `localStorage`. Photos are resized in-browser before storage.
+The app stores catalog data locally in the browser with IndexedDB. Photos are resized in-browser before storage. Older `localStorage` catalog data is migrated into IndexedDB the first time the updated app opens.
 
 Production sync and cloud photo upload can be enabled by defining `window.COLLECTIBLE_APP_CONFIG` before `src/main.js` loads. Without that config, the app stays in local-only mode. See [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md) and [docs/PRODUCTION_BACKEND.md](docs/PRODUCTION_BACKEND.md).
 
@@ -62,6 +62,8 @@ npm run test:backend
 
 - Mobile-friendly PWA shell for web and mobile browser use.
 - Camera/photo capture through the device camera or file picker.
+- Local-first IndexedDB catalog storage for one-person offline use.
+- Export/import JSON backups with profile settings, item records, and stored photo data.
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
 - Sortable catalog views by recent update, title, category, maker, value, and acquisition date.

@@ -1,0 +1,50 @@
+# Local Database
+
+The app is now local-first for a one-person collection. Catalog records are stored in IndexedDB inside the browser, which is a better fit than `localStorage` for larger catalogs and photo-heavy records.
+
+## What Lives Locally
+
+- Catalog records.
+- Resized photo data or photo URLs.
+- Comparable sales and provider candidates.
+- Yard-sale and seller listing fields.
+
+## Migration
+
+Earlier prototype versions stored the catalog under `localStorage` key `collectible-catalog.records.v1`. On first load, if IndexedDB is empty and that legacy catalog exists, the app copies those records into IndexedDB.
+
+The old data is left in place as a safety net.
+
+## Limits
+
+IndexedDB data is private to the browser profile and device. It does not automatically sync to another phone or laptop.
+
+For one-person use, backup/restore is the main safety feature:
+
+- Export catalog backup.
+- Import catalog backup.
+- Preserve profile settings and photo data stored in catalog records.
+- Record the last backup date in the profile.
+
+## Backup Format
+
+Backups are downloaded as dated JSON files:
+
+```text
+collectible-catalog-backup-YYYY-MM-DD.json
+```
+
+Each backup includes:
+
+- Backup format version.
+- Creation timestamp.
+- Profile settings.
+- Catalog items, including photo data URLs or photo URLs already stored in item records.
+
+Older prototype exports that were just an array of items can still be imported.
+
+Importing a backup replaces the catalog on the current device after confirmation.
+
+## Cloud Remains Optional
+
+The backend and sync boundary remain available, but they are no longer required for a one-person local app. The app can run fully local unless cloud sync or shared family access becomes important later.

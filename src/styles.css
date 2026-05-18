@@ -333,6 +333,40 @@ svg {
   margin-bottom: 16px;
 }
 
+.backup-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--panel-surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.backup-panel strong {
+  display: block;
+  font-size: 16px;
+}
+
+.backup-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.backup-import-button {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.backup-import-button input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
 .stat-grid article,
 .process-note,
 .empty-state {
@@ -550,6 +584,7 @@ svg {
 .app-header,
 .entry-panel,
 .catalog-panel,
+.backup-panel,
 .label-workbench,
 .inventory-print-workbench,
 .yard-sale-workbench,

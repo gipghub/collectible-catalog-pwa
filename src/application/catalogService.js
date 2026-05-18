@@ -10,12 +10,14 @@ import {
   createComparableCandidate
 } from "../domain/comparable.js";
 
-export function createCatalogService(repository) {
-  let items = repository.load().map((item) => createCollectible(item, new Date(item.updatedAt || Date.now())));
+export async function createCatalogService(repository) {
+  let items = (await repository.load()).map((item) => createCollectible(item, new Date(item.updatedAt || Date.now())));
   const subscribers = new Set();
 
   function publish() {
-    repository.save(items);
+    Promise.resolve(repository.save(items)).catch((error) => {
+      console.warn("Catalog could not be saved.", error);
+    });
     subscribers.forEach((subscriber) => subscriber(getItems()));
   }
 
@@ -67,6 +69,12 @@ export function createCatalogService(repository) {
     remove(id) {
       items = items.filter((item) => item.id !== id);
       publish();
+    },
+
+    replaceAll(inputs = []) {
+      items = inputs.map((item) => createCollectible(item, new Date(item.updatedAt || Date.now())));
+      publish();
+      return getItems();
     },
 
     addComparable(itemId, input) {

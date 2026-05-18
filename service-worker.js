@@ -1,4 +1,4 @@
-const CACHE_NAME = "collectible-catalog-v17";
+const CACHE_NAME = "collectible-catalog-v19";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_FILES = [
   "./src/assets/collectibles-watermark.svg",
   "./src/main.js",
   "./src/config/appConfig.js",
+  "./src/domain/catalogBackup.js",
   "./src/domain/collectible.js",
   "./src/domain/comparable.js",
   "./src/domain/label.js",

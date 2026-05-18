@@ -1,4 +1,8 @@
 import {
+  createCatalogBackup,
+  parseCatalogBackup
+} from "../domain/catalogBackup.js";
+import {
   CATALOG_SORT_OPTIONS,
   CATEGORIES,
   CONDITIONS,
@@ -245,6 +249,7 @@ export function mountApp({
           ${renderStats(allItems)}
           ${renderCategoryFilter(currentState)}
           ${renderSortControl(currentState)}
+          ${renderBackupPanel(currentState)}
           <div class="process-note">
             <h2>Clean Workflow</h2>
             <p>Capture, catalog, compare, label. Each record gets a stable code before it ever reaches a shelf or display case.</p>
@@ -259,7 +264,7 @@ export function mountApp({
               <p class="eyebrow">Inventory</p>
               <h2 id="catalogTitle">Catalog Entries</h2>
             </div>
-            <button class="text-button" type="button" data-action="export-json">Export JSON</button>
+            <button class="text-button" type="button" data-action="export-backup">Export Backup</button>
           </div>
           ${renderCatalogGrid(filteredItems)}
         </section>
@@ -303,6 +308,32 @@ export function mountApp({
           <span>${photoCount}</span>
           <p>With photos</p>
         </article>
+      </section>
+    `;
+  }
+
+  function renderBackupPanel(currentState) {
+    const lastBackupLabel = currentState.profile.lastBackupAt
+      ? new Date(currentState.profile.lastBackupAt).toLocaleDateString()
+      : "No backup yet";
+
+    return `
+      <section class="backup-panel">
+        <div>
+          <p class="eyebrow">Local backup</p>
+          <strong>${escapeHtml(lastBackupLabel)}</strong>
+        </div>
+        <div class="backup-actions">
+          <button class="button secondary" type="button" data-action="export-backup">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"></path></svg>
+            Export
+          </button>
+          <label class="button secondary backup-import-button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21V9m0 0 4 4m-4-4-4 4M4 3h16"></path></svg>
+            Import
+            <input name="backupFile" type="file" accept="application/json,.json">
+          </label>
+        </div>
       </section>
     `;
   }
@@ -1302,8 +1333,8 @@ export function mountApp({
       window.print();
     }
 
-    if (action === "export-json") {
-      exportCatalog(service.list());
+    if (action === "export-backup" || action === "export-json") {
+      exportCatalogBackup(currentState);
     }
   }
 
@@ -1396,6 +1427,11 @@ export function mountApp({
     if (event.target.name === "photo" && event.target.files?.[0]) {
       currentState.pendingPhotoDataUrl = await imageReader(event.target.files[0]);
       render(currentState);
+    }
+
+    if (event.target.name === "backupFile" && event.target.files?.[0]) {
+      await importCatalogBackup(event.target.files[0], currentState);
+      event.target.value = "";
     }
   }
 
@@ -1595,14 +1631,48 @@ export function mountApp({
     }, 2400);
   }
 
-  function exportCatalog(items) {
-    const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+  function exportCatalogBackup(currentState) {
+    const now = new Date().toISOString();
+    const backup = createCatalogBackup({
+      items: service.list(),
+      profile: currentState.profile,
+      createdAt: now
+    });
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "collectible-catalog-export.json";
+    link.download = `collectible-catalog-backup-${now.slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
+
+    saveProfile(currentState, { lastBackupAt: now });
+    showToast(currentState, "Backup exported.");
+  }
+
+  async function importCatalogBackup(file, currentState) {
+    if (!confirm("Import this backup and replace the current catalog on this device?")) {
+      return;
+    }
+
+    try {
+      const backup = parseCatalogBackup(await readTextFile(file));
+      service.replaceAll(backup.items);
+
+      if (backup.profile && Object.keys(backup.profile).length > 0) {
+        saveProfile(currentState, {
+          ...backup.profile,
+          lastBackupAt: backup.createdAt || currentState.profile.lastBackupAt
+        });
+      }
+
+      clearPrintQueues(currentState);
+      currentState.selectedId = null;
+      currentState.editingId = null;
+      showToast(currentState, `Backup restored with ${backup.items.length} items.`);
+    } catch (error) {
+      showToast(currentState, error.message || "Backup import failed.");
+    }
   }
 
   function getCatalogQuery(currentState) {
@@ -1784,6 +1854,15 @@ function getSyncToast(status) {
 
 function formToObject(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsText(file);
+  });
 }
 
 function escapeHtml(value) {

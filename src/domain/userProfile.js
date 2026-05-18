@@ -9,6 +9,7 @@ export function createUserProfile(input = {}) {
     collectionName: cleanText(input.collectionName, "Collection workspace"),
     defaultCategory: cleanText(input.defaultCategory, "Other"),
     currency: normalizeCurrency(input.currency),
+    lastBackupAt: cleanText(input.lastBackupAt),
     theme: normalizeTheme(input.theme)
   };
 }

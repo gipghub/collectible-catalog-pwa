@@ -7,7 +7,9 @@
   "scripts": {
     "check": "node scripts/check-project.mjs",
     "test:auth": "node scripts/auth-client-smoke.mjs",
+    "test:backup": "node scripts/catalog-backup-smoke.mjs",
     "test:backend": "node scripts/backend-smoke.mjs",
+    "test:catalog": "node scripts/catalog-repository-smoke.mjs",
     "test:sale-listing": "node scripts/sale-listing-smoke.mjs",
     "start:api": "node server/index.mjs",
     "serve": "python -m http.server 4173 --bind 127.0.0.1"
