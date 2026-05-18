@@ -34,6 +34,7 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
 - Sortable catalog views by recent update, title, category, maker, value, and acquisition date.
+- Subtle collectible watermark background with trading card, coin, record, stamp, and paper ephemera motifs.
 - Comparable-search links for marketplaces and web sources.
 - Direct PriceCharting API token support for guide-value candidates.
 - Provider-ready comparable scanning with accepted/rejected candidate review.
