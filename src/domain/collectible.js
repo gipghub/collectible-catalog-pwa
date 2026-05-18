@@ -21,6 +21,14 @@ export const CONDITIONS = [
   "Ungraded"
 ];
 
+export const SALE_STATUS_OPTIONS = [
+  "Keep",
+  "Sell",
+  "Unsure",
+  "Donated",
+  "Sold"
+];
+
 export const CATALOG_SORT_OPTIONS = [
   { value: "updated-desc", label: "Recently updated" },
   { value: "title-asc", label: "Title A-Z" },
@@ -29,6 +37,8 @@ export const CATALOG_SORT_OPTIONS = [
   { value: "maker-asc", label: "Maker" },
   { value: "value-desc", label: "Value high to low" },
   { value: "value-asc", label: "Value low to high" },
+  { value: "asking-desc", label: "Asking price high to low" },
+  { value: "sale-status", label: "Sale status" },
   { value: "acquired-desc", label: "Acquired newest" }
 ];
 
@@ -47,6 +57,11 @@ export function createCollectible(input, now = new Date()) {
     acquisitionDate: input.acquisitionDate || "",
     purchasePrice: toNumberOrEmpty(input.purchasePrice),
     estimatedValue: toNumberOrEmpty(input.estimatedValue),
+    saleStatus: normalizeSaleStatus(input.saleStatus),
+    askingPrice: toNumberOrEmpty(input.askingPrice),
+    lowestPrice: toNumberOrEmpty(input.lowestPrice),
+    soldPrice: toNumberOrEmpty(input.soldPrice),
+    saleNotes: cleanText(input.saleNotes),
     tags: normalizeTags(input.tags),
     notes: cleanText(input.notes),
     photoDataUrl: input.photoDataUrl || "",
@@ -88,6 +103,8 @@ export function matchesCollectible(item, query, category) {
     item.maker,
     item.series,
     item.condition,
+    item.saleStatus,
+    item.saleNotes,
     item.notes,
     item.tags.join(" ")
   ]
@@ -134,6 +151,19 @@ export function sortCollectibles(items, sortBy = "updated-desc") {
         || compareText(left.catalogCode, right.catalogCode);
     }
 
+    if (sortOption === "asking-desc") {
+      return compareMoney(left.askingPrice, right.askingPrice, "desc")
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "sale-status") {
+      return compareSaleStatus(left.saleStatus, right.saleStatus)
+        || compareText(left.category, right.category)
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
     if (sortOption === "acquired-desc") {
       return compareDate(left.acquisitionDate, right.acquisitionDate, "desc")
         || compareText(left.title, right.title)
@@ -173,6 +203,15 @@ function compareText(leftValue, rightValue) {
     sensitivity: "base",
     numeric: true
   });
+}
+
+function compareSaleStatus(leftValue, rightValue) {
+  return getSaleStatusRank(leftValue) - getSaleStatusRank(rightValue);
+}
+
+function getSaleStatusRank(value) {
+  const rank = SALE_STATUS_OPTIONS.indexOf(normalizeSaleStatus(value));
+  return rank === -1 ? SALE_STATUS_OPTIONS.length : rank;
 }
 
 function compareMoney(leftValue, rightValue, direction) {
@@ -233,6 +272,10 @@ function normalizeTags(value) {
     .map((tag) => tag.trim())
     .filter(Boolean)
     .slice(0, 8);
+}
+
+function normalizeSaleStatus(value) {
+  return SALE_STATUS_OPTIONS.includes(value) ? value : "Keep";
 }
 
 function toNumberOrEmpty(value) {

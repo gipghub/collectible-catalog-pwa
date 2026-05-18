@@ -90,7 +90,7 @@ svg {
 
 .app-header {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(320px, 720px) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 900px) auto;
   gap: 16px;
   align-items: center;
   padding: 22px clamp(16px, 4vw, 42px);
@@ -125,6 +125,7 @@ svg {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
@@ -177,6 +178,7 @@ svg {
   grid-template-columns: 20px 1fr;
   gap: 10px;
   align-items: center;
+  flex: 1 1 260px;
   min-width: 280px;
   padding: 0 12px;
   border: 1px solid var(--line);
@@ -208,14 +210,20 @@ svg {
 .entry-panel,
 .catalog-panel,
 .label-workbench,
-.inventory-print-workbench {
+.inventory-print-workbench,
+.yard-sale-workbench,
+.price-tag-workbench,
+.sale-list-print-workbench {
   min-width: 0;
 }
 
 .entry-panel,
 .catalog-panel,
 .label-workbench,
-.inventory-print-workbench {
+.inventory-print-workbench,
+.yard-sale-workbench,
+.price-tag-workbench,
+.sale-list-print-workbench {
   background: var(--panel-surface);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -431,7 +439,8 @@ svg {
 .form-actions,
 .card-actions,
 .link-strip,
-.comp-summary {
+.comp-summary,
+.workbench-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -458,6 +467,9 @@ svg {
 .catalog-panel,
 .label-workbench,
 .inventory-print-workbench,
+.yard-sale-workbench,
+.price-tag-workbench,
+.sale-list-print-workbench,
 .stat-grid article,
 .process-note,
 .empty-state,
@@ -509,6 +521,50 @@ svg {
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
+}
+
+.sale-form-section {
+  padding: 14px;
+  background: var(--panel-surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sale-form-section .field {
+  margin-bottom: 0;
+}
+
+.sale-pill {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 8px !important;
+  padding: 5px 8px;
+  color: var(--ink) !important;
+  background: #fff8e6;
+  border: 1px solid #ead492;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sale-pill.sell {
+  background: #e8f6ef;
+  border-color: #aad4bd;
+}
+
+.sale-pill.sold {
+  background: #e8f0fb;
+  border-color: #a8bee2;
+}
+
+.sale-pill.donated {
+  background: #f2ece3;
+  border-color: #d8c6aa;
+}
+
+:root[data-theme="dark"] .sale-pill {
+  background: #3c3320;
+  border-color: #735d27;
 }
 
 .detail-dialog {
@@ -823,6 +879,138 @@ svg {
   font-weight: 800;
 }
 
+.yard-sale-workbench,
+.price-tag-workbench,
+.sale-list-print-workbench {
+  margin: 0 clamp(16px, 4vw, 42px) 40px;
+  padding: 18px;
+}
+
+.sale-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sale-dashboard article {
+  padding: 14px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sale-dashboard span {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.sale-dashboard p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sale-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sale-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) 150px minmax(250px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--mustard);
+  border-radius: 8px;
+}
+
+.sale-card.sell {
+  border-left-color: var(--green);
+}
+
+.sale-card.sold {
+  border-left-color: var(--teal);
+}
+
+.sale-card.donated {
+  border-left-color: var(--muted);
+}
+
+.sale-card h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.sale-card p,
+.sale-card-note {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
+.sale-card-note {
+  overflow-wrap: anywhere;
+}
+
+.sale-status-block {
+  display: grid;
+  gap: 6px;
+}
+
+.sale-status-block small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sale-status {
+  width: fit-content;
+  padding: 6px 9px;
+  color: #ffffff;
+  background: var(--teal);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sale-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.sale-price-grid div {
+  padding: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sale-price-grid dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sale-price-grid dd {
+  margin: 4px 0 0;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.sale-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .label-workbench {
   margin: 0 clamp(16px, 4vw, 42px) 40px;
   padding: 18px;
@@ -834,7 +1022,9 @@ svg {
 }
 
 .label-workbench:empty,
-.inventory-print-workbench:empty {
+.inventory-print-workbench:empty,
+.price-tag-workbench:empty,
+.sale-list-print-workbench:empty {
   display: none;
 }
 
@@ -877,6 +1067,59 @@ svg {
 .barcode {
   width: 100%;
   height: 54px;
+}
+
+.price-tag-sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.sale-price-tag {
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  min-height: 190px;
+  padding: 14px;
+  color: #111111;
+  background: #ffffff;
+  border: 2px solid #111111;
+  border-radius: 4px;
+  page-break-inside: avoid;
+}
+
+.tag-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #333333;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tag-price {
+  display: block;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.sale-price-tag h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.sale-price-tag p {
+  margin: 0;
+  font-weight: 900;
+}
+
+.sale-price-tag small {
+  color: #333333;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 900;
 }
 
 .inventory-print-header {
@@ -1010,11 +1253,15 @@ svg {
   .comparable-form,
   .provider-form,
   .provider-fields,
-  .candidate-card {
+  .candidate-card,
+  .sale-dashboard,
+  .sale-card,
+  .sale-price-grid {
     grid-template-columns: 1fr;
   }
 
-  .candidate-actions {
+  .candidate-actions,
+  .sale-actions {
     justify-content: stretch;
   }
 
@@ -1048,14 +1295,19 @@ svg {
   .app-header,
   .app-shell,
   .toast,
+  .yard-sale-workbench,
   .label-workbench > .section-heading,
   .inventory-print-workbench > .section-heading,
+  .price-tag-workbench > .section-heading,
+  .sale-list-print-workbench > .section-heading,
   .detail-dialog {
     display: none !important;
   }
 
   .label-workbench,
-  .inventory-print-workbench {
+  .inventory-print-workbench,
+  .price-tag-workbench,
+  .sale-list-print-workbench {
     display: block;
     margin: 0;
     padding: 0;
@@ -1072,6 +1324,20 @@ svg {
   .print-label {
     min-height: 1.75in;
     border-radius: 0;
+  }
+
+  .price-tag-sheet {
+    grid-template-columns: repeat(3, 2.35in);
+    gap: 0.12in;
+  }
+
+  .sale-price-tag {
+    min-height: 1.85in;
+    border-radius: 0;
+  }
+
+  .tag-price {
+    font-size: 34px;
   }
 
   .inventory-print-header {

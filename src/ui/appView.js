@@ -2,6 +2,7 @@ import {
   CATALOG_SORT_OPTIONS,
   CATEGORIES,
   CONDITIONS,
+  SALE_STATUS_OPTIONS,
   formatMoney
 } from "../domain/collectible.js";
 import { summarizeComparables } from "../domain/comparable.js";
@@ -29,6 +30,7 @@ export function mountApp({
     labelItemIds: [],
     pendingPhotoDataUrl: "",
     priceChartingToken: comparableProvider.getPriceChartingToken?.() || "",
+    priceTagItemIds: [],
     printListItemIds: [],
     profile: profileRepository.load(),
     providerEndpoint: comparableProvider.getEndpoint?.() || "",
@@ -36,6 +38,7 @@ export function mountApp({
     scanningItemId: "",
     search: "",
     selectedId: null,
+    saleListItemIds: [],
     sortBy: "updated-desc",
     toast: ""
   };
@@ -57,13 +60,19 @@ export function mountApp({
     const editingItem = currentState.editingId ? service.getById(currentState.editingId) : null;
     const selectedItem = currentState.selectedId ? service.getById(currentState.selectedId) : null;
     const labelItems = currentState.labelItemIds.map((id) => service.getById(id)).filter(Boolean);
+    const priceTagItems = currentState.priceTagItemIds.map((id) => service.getById(id)).filter(Boolean);
     const printListItems = currentState.printListItemIds.map((id) => service.getById(id)).filter(Boolean);
+    const saleListItems = currentState.saleListItemIds.map((id) => service.getById(id)).filter(Boolean);
+    const yardSaleItems = getYardSaleItems(allItems);
 
     root.innerHTML = [
       renderHeader(currentState, filteredItems.length),
       renderMain(currentState, allItems, filteredItems, editingItem),
+      renderYardSaleWorkbench(yardSaleItems, allItems, currentState),
       renderLabelWorkbench(labelItems),
       renderInventoryPrintWorkbench(printListItems, currentState),
+      renderPriceTagWorkbench(priceTagItems, currentState),
+      renderYardSalePrintWorkbench(saleListItems, currentState),
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
       currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
@@ -106,6 +115,10 @@ export function mountApp({
           <button class="button secondary" type="button" data-action="print-catalog-list">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
             Print List
+          </button>
+          <button class="button secondary" type="button" data-action="go-yard-sale">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M6 7l1 14h10l1-14M9 11h6M10 15h4"></path></svg>
+            Yard Sale
           </button>
           <button class="button secondary" type="button" data-action="print-filtered-labels">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
@@ -251,6 +264,7 @@ export function mountApp({
           ${renderTextField("estimatedValue", "Estimated value", editingItem?.estimatedValue || "", "0", "number")}
         </div>
         ${renderTextField("tags", "Tags", editingItem?.tags?.join(", ") || "", "graded, inherited, display")}
+        ${renderSalePlanFields(editingItem)}
         <label class="field">
           <span>Notes</span>
           <textarea name="notes" rows="4" placeholder="Provenance, flaws, storage location, grading details">${escapeHtml(editingItem?.notes || "")}</textarea>
@@ -263,6 +277,29 @@ export function mountApp({
           <button class="button secondary" type="reset" data-action="cancel-edit">Clear</button>
         </div>
       </form>
+    `;
+  }
+
+  function renderSalePlanFields(editingItem) {
+    return `
+      <section class="sale-form-section">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Yard sale</p>
+            <h3>Sale Plan</h3>
+          </div>
+        </div>
+        <div class="form-grid">
+          ${renderSelectField("saleStatus", "Plan", SALE_STATUS_OPTIONS, editingItem?.saleStatus || "Keep")}
+          ${renderTextField("askingPrice", "Asking price", editingItem?.askingPrice || "", "25", "number")}
+          ${renderTextField("lowestPrice", "Private floor price", editingItem?.lowestPrice || "", "15", "number")}
+          ${renderTextField("soldPrice", "Sold price", editingItem?.soldPrice || "", "20", "number")}
+        </div>
+        <label class="field">
+          <span>Sale notes</span>
+          <textarea name="saleNotes" rows="2" placeholder="Box location, bundle idea, hold request">${escapeHtml(editingItem?.saleNotes || "")}</textarea>
+        </label>
+      </section>
     `;
   }
 
@@ -294,6 +331,7 @@ export function mountApp({
             <p class="code">${escapeHtml(item.catalogCode)}</p>
             <h3>${escapeHtml(item.title)}</h3>
             <p>${escapeHtml(item.category)} | ${escapeHtml(item.condition)}</p>
+            ${renderSaleBadge(item)}
           </div>
           <div class="item-meta">
             <span>${formatMoney(item.estimatedValue, state.profile.currency)}</span>
@@ -313,6 +351,17 @@ export function mountApp({
         </div>
       </article>
     `;
+  }
+
+  function renderSaleBadge(item) {
+    if (!item.saleStatus || item.saleStatus === "Keep") {
+      return "";
+    }
+
+    const price = item.saleStatus === "Sold" ? item.soldPrice : item.askingPrice;
+    const priceLabel = hasMoney(price) ? ` | ${formatMoney(price, state.profile.currency)}` : "";
+
+    return `<p class="sale-pill ${escapeAttribute(item.saleStatus.toLowerCase())}">${escapeHtml(item.saleStatus)}${escapeHtml(priceLabel)}</p>`;
   }
 
   function renderDetailDialog(item, currentState) {
@@ -346,8 +395,13 @@ export function mountApp({
               <div><dt>Series</dt><dd>${escapeHtml(item.series || "Not set")}</dd></div>
               <div><dt>Estimated</dt><dd>${formatMoney(item.estimatedValue, currentState.profile.currency)}</dd></div>
               <div><dt>Acquired</dt><dd>${escapeHtml(item.acquisitionDate || "Not set")}</dd></div>
+              <div><dt>Sale plan</dt><dd>${escapeHtml(item.saleStatus || "Keep")}</dd></div>
+              <div><dt>Asking</dt><dd>${formatMoney(item.askingPrice, currentState.profile.currency)}</dd></div>
+              <div><dt>Private floor</dt><dd>${formatMoney(item.lowestPrice, currentState.profile.currency)}</dd></div>
+              <div><dt>Sold</dt><dd>${formatMoney(item.soldPrice, currentState.profile.currency)}</dd></div>
             </dl>
             ${item.notes ? `<p class="notes">${escapeHtml(item.notes)}</p>` : ""}
+            ${item.saleNotes ? `<p class="notes sale-notes">${escapeHtml(item.saleNotes)}</p>` : ""}
             ${renderComparableSection(item, summary, links, currentState)}
           </div>
         </div>
@@ -492,6 +546,108 @@ export function mountApp({
     `;
   }
 
+  function renderYardSaleWorkbench(items, allItems, currentState) {
+    const stats = getYardSaleStats(allItems);
+    const hasPriceTags = items.some((item) => isPriceTagItem(item));
+
+    return `
+      <section class="yard-sale-workbench" id="yardSale">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Sale day</p>
+            <h2>Yard Sale Planner</h2>
+          </div>
+          <div class="workbench-actions">
+            <button class="button secondary" type="button" data-action="print-yard-sale-list" ${items.length === 0 ? "disabled" : ""}>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+              Sale Sheet
+            </button>
+            <button class="button primary" type="button" data-action="print-yard-sale-tags" ${hasPriceTags ? "" : "disabled"}>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82ZM7.5 7.5h.01"></path></svg>
+              Price Tags
+            </button>
+          </div>
+        </div>
+        <div class="sale-dashboard" aria-label="Yard sale summary">
+          <article>
+            <span>${stats.readyCount}</span>
+            <p>Ready to sell</p>
+          </article>
+          <article>
+            <span>${formatMoney(stats.askingTotal, currentState.profile.currency)}</span>
+            <p>Asking total</p>
+          </article>
+          <article>
+            <span>${formatMoney(stats.soldTotal, currentState.profile.currency)}</span>
+            <p>Sold total</p>
+          </article>
+          <article>
+            <span>${stats.unsureCount + stats.donatedCount}</span>
+            <p>Unsure or donate</p>
+          </article>
+        </div>
+        ${items.length === 0 ? renderYardSaleEmptyState() : `
+          <div class="sale-list">
+            ${items.map((item) => renderYardSaleItem(item, currentState)).join("")}
+          </div>
+        `}
+      </section>
+    `;
+  }
+
+  function renderYardSaleEmptyState() {
+    return `
+      <div class="empty-state">
+        <h3>No sale items marked yet</h3>
+        <p>Set an item plan to Sell, Unsure, Donated, or Sold and it appears here for sale-day prep.</p>
+      </div>
+    `;
+  }
+
+  function renderYardSaleItem(item, currentState) {
+    const pricing = getSalePricing(item);
+    const askingLabel = hasMoney(item.askingPrice)
+      ? formatMoney(item.askingPrice, currentState.profile.currency)
+      : pricing.suggestedAsk === null
+        ? "Set ask"
+        : `Suggested ${formatMoney(pricing.suggestedAsk, currentState.profile.currency)}`;
+    const floorLabel = hasMoney(item.lowestPrice)
+      ? formatMoney(item.lowestPrice, currentState.profile.currency)
+      : pricing.suggestedFloor === null
+        ? "Not set"
+        : `Suggested ${formatMoney(pricing.suggestedFloor, currentState.profile.currency)}`;
+    const soldLabel = hasMoney(item.soldPrice) ? formatMoney(item.soldPrice, currentState.profile.currency) : "Not sold";
+    const marketLabel = pricing.market === null ? "No market anchor" : formatMoney(pricing.market, currentState.profile.currency);
+
+    return `
+      <article class="sale-card ${escapeAttribute(item.saleStatus.toLowerCase())}">
+        <div>
+          <p class="code">${escapeHtml(item.catalogCode)}</p>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p>${escapeHtml(item.category)} | ${escapeHtml(item.condition)}</p>
+          ${item.saleNotes ? `<p class="sale-card-note">${escapeHtml(item.saleNotes)}</p>` : ""}
+        </div>
+        <div class="sale-status-block">
+          <span class="sale-status">${escapeHtml(item.saleStatus)}</span>
+          <small>${escapeHtml(marketLabel)}</small>
+        </div>
+        <dl class="sale-price-grid">
+          <div><dt>Ask</dt><dd>${escapeHtml(askingLabel)}</dd></div>
+          <div><dt>Private floor</dt><dd>${escapeHtml(floorLabel)}</dd></div>
+          <div><dt>Sold</dt><dd>${escapeHtml(soldLabel)}</dd></div>
+        </dl>
+        <div class="sale-actions">
+          <button class="icon-button" type="button" data-action="edit-item" data-id="${escapeAttribute(item.id)}" aria-label="Edit sale item">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          </button>
+          <button class="icon-button" type="button" data-action="print-selected-price-tag" data-id="${escapeAttribute(item.id)}" aria-label="Print price tag" ${isPriceTagItem(item) ? "" : "disabled"}>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.59 13.41 11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82ZM7.5 7.5h.01"></path></svg>
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
   function renderLabelWorkbench(items) {
     if (items.length === 0) {
       return `<section class="label-workbench" aria-live="polite"></section>`;
@@ -601,6 +757,114 @@ export function mountApp({
     `;
   }
 
+  function renderPriceTagWorkbench(items, currentState) {
+    if (items.length === 0) {
+      return `<section class="price-tag-workbench" aria-live="polite"></section>`;
+    }
+
+    return `
+      <section class="price-tag-workbench" aria-live="polite">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Print queue</p>
+            <h2>Yard Sale Price Tags</h2>
+          </div>
+          <button class="button primary" type="button" data-action="print-now">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
+            Print
+          </button>
+        </div>
+        <div class="price-tag-sheet">
+          ${items.map((item) => renderPriceTag(item, currentState)).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderPriceTag(item, currentState) {
+    const askingPrice = getMoneyNumber(item.askingPrice);
+    const lowestPrice = getMoneyNumber(item.lowestPrice);
+    const priceLabel = askingPrice === null ? "Make offer" : formatMoney(askingPrice, currentState.profile.currency);
+    const offerLabel = askingPrice !== null && lowestPrice !== null && lowestPrice < askingPrice ? "OBO" : "Firm";
+
+    return `
+      <article class="sale-price-tag">
+        <div class="tag-topline">
+          <span>${escapeHtml(item.category)}</span>
+          <span>${escapeHtml(item.condition)}</span>
+        </div>
+        <strong class="tag-price">${escapeHtml(priceLabel)}</strong>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(offerLabel)}</p>
+        <small>${escapeHtml(item.catalogCode)}</small>
+      </article>
+    `;
+  }
+
+  function renderYardSalePrintWorkbench(items, currentState) {
+    if (items.length === 0) {
+      return `<section class="sale-list-print-workbench" aria-live="polite"></section>`;
+    }
+
+    const generatedAt = new Date().toLocaleString();
+    const stats = getYardSaleStats(items);
+
+    return `
+      <section class="sale-list-print-workbench" aria-live="polite">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Print queue</p>
+            <h2>Private Yard Sale Sheet</h2>
+          </div>
+          <button class="button primary" type="button" data-action="print-now">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
+            Print
+          </button>
+        </div>
+        <div class="inventory-print-header">
+          <div>
+            <strong>${escapeHtml(currentState.profile.collectionName)}</strong>
+            <span>Private sale sheet | ${escapeHtml(generatedAt)}</span>
+          </div>
+          <div>
+            <strong>${items.length} items</strong>
+            <span>${escapeHtml(formatMoney(stats.askingTotal, currentState.profile.currency))} asking | ${escapeHtml(formatMoney(stats.soldTotal, currentState.profile.currency))} sold</span>
+          </div>
+        </div>
+        <div class="inventory-print-table-wrap">
+          <table class="inventory-print-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Item</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Ask</th>
+                <th>Private Floor</th>
+                <th>Sold</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr>
+                  <td>${escapeHtml(item.catalogCode)}</td>
+                  <td>${escapeHtml(item.title)}</td>
+                  <td>${escapeHtml(item.category)}</td>
+                  <td>${escapeHtml(item.saleStatus)}</td>
+                  <td>${escapeHtml(formatMoney(item.askingPrice, currentState.profile.currency))}</td>
+                  <td>${escapeHtml(formatMoney(item.lowestPrice, currentState.profile.currency))}</td>
+                  <td>${escapeHtml(formatMoney(item.soldPrice, currentState.profile.currency))}</td>
+                  <td>${escapeHtml(item.saleNotes || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+
   function renderProfileDialog(profile) {
     return `
       <dialog class="profile-dialog" id="profileDialog">
@@ -678,6 +942,10 @@ export function mountApp({
       render(currentState);
     }
 
+    if (action === "go-yard-sale") {
+      root.querySelector("#yardSale")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
     if (action === "open-profile") {
       currentState.isProfileOpen = true;
       render(currentState);
@@ -747,16 +1015,16 @@ export function mountApp({
     }
 
     if (action === "print-selected-label") {
+      clearPrintQueues(currentState);
       currentState.labelItemIds = [id];
-      currentState.printListItemIds = [];
       render(currentState);
       requestAnimationFrame(() => window.print());
     }
 
     if (action === "print-filtered-labels") {
       const items = service.list(getCatalogQuery(currentState));
+      clearPrintQueues(currentState);
       currentState.labelItemIds = items.map((item) => item.id);
-      currentState.printListItemIds = [];
       render(currentState);
     }
 
@@ -768,8 +1036,43 @@ export function mountApp({
         return;
       }
 
+      clearPrintQueues(currentState);
       currentState.printListItemIds = items.map((item) => item.id);
-      currentState.labelItemIds = [];
+      render(currentState);
+      requestAnimationFrame(() => window.print());
+    }
+
+    if (action === "print-selected-price-tag") {
+      clearPrintQueues(currentState);
+      currentState.priceTagItemIds = [id];
+      render(currentState);
+      requestAnimationFrame(() => window.print());
+    }
+
+    if (action === "print-yard-sale-tags") {
+      const items = getYardSaleItems(service.list()).filter((item) => isPriceTagItem(item));
+
+      if (items.length === 0) {
+        showToast(currentState, "No yard sale items with price tags yet.");
+        return;
+      }
+
+      clearPrintQueues(currentState);
+      currentState.priceTagItemIds = items.map((item) => item.id);
+      render(currentState);
+      requestAnimationFrame(() => window.print());
+    }
+
+    if (action === "print-yard-sale-list") {
+      const items = getYardSaleItems(service.list());
+
+      if (items.length === 0) {
+        showToast(currentState, "No yard sale items to print.");
+        return;
+      }
+
+      clearPrintQueues(currentState);
+      currentState.saleListItemIds = items.map((item) => item.id);
       render(currentState);
       requestAnimationFrame(() => window.print());
     }
@@ -807,8 +1110,8 @@ export function mountApp({
         showToast(currentState, "Catalog entry updated.");
       } else {
         const item = service.create(payload);
+        clearPrintQueues(currentState);
         currentState.labelItemIds = [item.id];
-        currentState.printListItemIds = [];
         showToast(currentState, "Catalog entry created.");
       }
 
@@ -904,6 +1207,13 @@ export function mountApp({
     currentState.pendingPhotoDataUrl = "";
   }
 
+  function clearPrintQueues(currentState) {
+    currentState.labelItemIds = [];
+    currentState.priceTagItemIds = [];
+    currentState.printListItemIds = [];
+    currentState.saleListItemIds = [];
+  }
+
   function saveProfile(currentState, input) {
     currentState.profile = createUserProfile({ ...currentState.profile, ...input });
     profileRepository.save(currentState.profile);
@@ -970,6 +1280,101 @@ export function mountApp({
   function getSortLabel(sortBy) {
     return CATALOG_SORT_OPTIONS.find((option) => option.value === sortBy)?.label || "Recently updated";
   }
+}
+
+function getYardSaleItems(items) {
+  return [...items]
+    .filter((item) => item.saleStatus && item.saleStatus !== "Keep")
+    .sort((left, right) =>
+      left.category.localeCompare(right.category, undefined, { sensitivity: "base" })
+      || compareMoneyForSort(left.askingPrice, right.askingPrice)
+      || left.title.localeCompare(right.title, undefined, { sensitivity: "base", numeric: true })
+    );
+}
+
+function getYardSaleStats(items) {
+  return {
+    readyCount: items.filter((item) => item.saleStatus === "Sell").length,
+    unsureCount: items.filter((item) => item.saleStatus === "Unsure").length,
+    donatedCount: items.filter((item) => item.saleStatus === "Donated").length,
+    askingTotal: sumMoney(items.filter((item) => ["Sell", "Unsure"].includes(item.saleStatus)), "askingPrice"),
+    soldTotal: sumMoney(items.filter((item) => item.saleStatus === "Sold"), "soldPrice")
+  };
+}
+
+function getSalePricing(item) {
+  const summary = summarizeComparables(item.comparables || []);
+  const market = summary.average ?? getMoneyNumber(item.estimatedValue);
+
+  if (market === null) {
+    return {
+      market: null,
+      suggestedAsk: null,
+      suggestedFloor: null
+    };
+  }
+
+  return {
+    market,
+    suggestedAsk: roundYardSalePrice(market * 0.35),
+    suggestedFloor: roundYardSalePrice(market * 0.2)
+  };
+}
+
+function isPriceTagItem(item) {
+  return ["Sell", "Unsure"].includes(item.saleStatus) || hasMoney(item.askingPrice);
+}
+
+function hasMoney(value) {
+  return getMoneyNumber(value) !== null;
+}
+
+function getMoneyNumber(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function sumMoney(items, key) {
+  return items.reduce((sum, item) => sum + (getMoneyNumber(item[key]) || 0), 0);
+}
+
+function compareMoneyForSort(leftValue, rightValue) {
+  const leftAmount = getMoneyNumber(leftValue);
+  const rightAmount = getMoneyNumber(rightValue);
+
+  if (leftAmount === null && rightAmount === null) {
+    return 0;
+  }
+
+  if (leftAmount === null) {
+    return 1;
+  }
+
+  if (rightAmount === null) {
+    return -1;
+  }
+
+  return rightAmount - leftAmount;
+}
+
+function roundYardSalePrice(value) {
+  if (value >= 100) {
+    return Math.max(5, Math.round(value / 5) * 5);
+  }
+
+  if (value >= 20) {
+    return Math.max(1, Math.round(value));
+  }
+
+  if (value >= 5) {
+    return Math.max(1, Math.round(value * 2) / 2);
+  }
+
+  return Math.max(0.5, Math.round(value * 4) / 4);
 }
 
 function formToObject(form) {
