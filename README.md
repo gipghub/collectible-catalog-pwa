@@ -7,7 +7,7 @@ A dependency-free starter app for cataloging collectibles across desktop, tablet
 - Repository: https://github.com/gipghub/collectible-catalog-pwa
 - Live app: https://gipghub.github.io/collectible-catalog-pwa/
 - Deployment: GitHub Pages publishes the static prototype from `main`.
-- CI/CD: A GitHub Actions workflow is prepared in `.github/workflows/ci-cd.yml`; pushing it requires GitHub CLI `workflow` scope.
+- CI/CD: `.github/workflows/ci-cd.yml` runs project checks, smoke tests, and GitHub Pages deployment on every push to `main`.
 
 ## Run Locally
 
@@ -78,7 +78,8 @@ npm run test:backend
 - Share-for-sale workflow that creates ready-to-paste listings for Facebook Marketplace, eBay, Craigslist, OfferUp, Nextdoor, or the device share sheet.
 - Seller tracking for listing status, sale site, listing URL, listed date, and sold-via details.
 - Printable public price tags plus a private seller sheet for sale-day tracking.
-- Printable labels with catalog code, item URL, and Code 128 barcode.
+- Printable labels with catalog code, item URL, Code 128 barcode, scannable QR code, and compact/Avery 5160/large-tag sheet presets.
+- Backup reminder status so a local-only catalog does not go too long without an export.
 - Sync-ready repository boundary with visible local/sync status in the app header.
 - Local production API slice with bearer-token auth, catalog sync, and disk-backed photo storage.
 - Clean Code-oriented folder structure:
@@ -94,7 +95,7 @@ npm run test:backend
 2. Move disk-backed photo storage to object storage such as S3, Supabase Storage, or Firebase Storage.
 3. Add collection sharing and role-based access for relatives.
 4. Add a hosted comparable provider endpoint with eBay Marketplace Insights, WorthPoint, or auction-house credentials stored server-side.
-5. Add QR labels and printer presets for Avery-style label sheets.
+5. Add optional cloud backup for users who want device-to-device recovery without managing JSON files.
 6. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), [docs/CLOUD_STORAGE_PLAN.md](docs/CLOUD_STORAGE_PLAN.md), and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.

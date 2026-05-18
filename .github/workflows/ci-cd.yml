@@ -32,6 +32,15 @@ jobs:
       - name: Run checks
         run: node scripts/check-project.mjs
 
+      - name: Run smoke tests
+        run: |
+          npm run test:auth
+          npm run test:backup
+          npm run test:backend
+          npm run test:catalog
+          npm run test:labels
+          npm run test:sale-listing
+
   deploy:
     name: Deploy prototype
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

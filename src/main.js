@@ -7,6 +7,7 @@ import { createAuthClient } from "./infrastructure/authClient.js";
 import { createConfiguredImageReader } from "./infrastructure/imageProcessor.js";
 import { createMarketplaceComparableProvider } from "./infrastructure/marketplaceComparableProvider.js";
 import { createCode128BarcodeSvg } from "./infrastructure/barcode.js";
+import { createQrCodeSvg } from "./infrastructure/qrCode.js";
 import { createSessionRepository } from "./infrastructure/sessionRepository.js";
 import { createUserProfileRepository } from "./infrastructure/userProfileRepository.js";
 import { mountApp } from "./ui/appView.js";
@@ -35,7 +36,8 @@ mountApp({
   profileRepository: createUserProfileRepository(),
   imageReader: createConfiguredImageReader({ appConfig }),
   comparableProvider: createMarketplaceComparableProvider(),
-  createBarcodeSvg: createCode128BarcodeSvg
+  createBarcodeSvg: createCode128BarcodeSvg,
+  createQrCodeSvg
 });
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {

@@ -22,6 +22,13 @@ import {
   resolveTheme
 } from "../domain/userProfile.js";
 
+const BACKUP_REMINDER_DAYS = 30;
+const LABEL_PRESETS = [
+  { value: "compact", label: "Compact tags" },
+  { value: "avery-5160", label: "Avery 5160" },
+  { value: "large-tag", label: "Large tags" }
+];
+
 export function mountApp({
   root,
   appConfig,
@@ -31,7 +38,8 @@ export function mountApp({
   profileRepository,
   imageReader,
   comparableProvider,
-  createBarcodeSvg
+  createBarcodeSvg,
+  createQrCodeSvg
 }) {
   const configuredSession = appConfig.apiToken
     ? {
@@ -53,6 +61,7 @@ export function mountApp({
     editingId: null,
     isProfileOpen: false,
     labelItemIds: [],
+    labelPreset: "compact",
     pendingPhotoDataUrl: "",
     priceChartingToken: comparableProvider.getPriceChartingToken?.() || "",
     priceTagItemIds: [],
@@ -106,7 +115,7 @@ export function mountApp({
       renderHeader(currentState, filteredItems.length),
       renderMain(currentState, allItems, filteredItems, editingItem),
       renderYardSaleWorkbench(yardSaleItems, allItems, currentState),
-      renderLabelWorkbench(labelItems),
+      renderLabelWorkbench(labelItems, currentState),
       renderInventoryPrintWorkbench(printListItems, currentState),
       renderPriceTagWorkbench(priceTagItems, currentState),
       renderYardSalePrintWorkbench(saleListItems, currentState),
@@ -316,12 +325,17 @@ export function mountApp({
     const lastBackupLabel = currentState.profile.lastBackupAt
       ? new Date(currentState.profile.lastBackupAt).toLocaleDateString()
       : "No backup yet";
+    const backupStatus = getBackupStatus(currentState.profile);
 
     return `
       <section class="backup-panel">
         <div>
           <p class="eyebrow">Local backup</p>
           <strong>${escapeHtml(lastBackupLabel)}</strong>
+          <span class="backup-status ${backupStatus.status}">
+            ${escapeHtml(backupStatus.label)}
+          </span>
+          <small>${escapeHtml(backupStatus.detail)}</small>
         </div>
         <div class="backup-actions">
           <button class="button secondary" type="button" data-action="export-backup">
@@ -851,12 +865,17 @@ export function mountApp({
     `;
   }
 
-  function renderLabelWorkbench(items) {
+  function renderLabelWorkbench(items, currentState) {
     if (items.length === 0) {
       return `<section class="label-workbench" aria-live="polite"></section>`;
     }
 
-    const baseUrl = window.location.href.split("#")[0];
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const presetOptions = LABEL_PRESETS.map((preset) => `
+      <option value="${escapeAttribute(preset.value)}" ${preset.value === currentState.labelPreset ? "selected" : ""}>
+        ${escapeHtml(preset.label)}
+      </option>
+    `).join("");
 
     return `
       <section class="label-workbench" aria-live="polite">
@@ -865,29 +884,41 @@ export function mountApp({
             <p class="eyebrow">Print queue</p>
             <h2>Cross-reference Labels</h2>
           </div>
-          <button class="button primary" type="button" data-action="print-now">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
-            Print
-          </button>
+          <div class="label-actions">
+            <label class="inline-field">
+              <span>Sheet</span>
+              <select name="labelPreset">${presetOptions}</select>
+            </label>
+            <button class="button primary" type="button" data-action="print-now">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
+              Print
+            </button>
+          </div>
         </div>
-        <div class="label-sheet">
-          ${items.map((item) => renderLabel(item, baseUrl)).join("")}
+        <div class="label-sheet ${escapeAttribute(currentState.labelPreset)}">
+          ${items.map((item) => renderLabel(item, baseUrl, currentState.labelPreset)).join("")}
         </div>
       </section>
     `;
   }
 
-  function renderLabel(item, baseUrl) {
+  function renderLabel(item, baseUrl, labelPreset) {
     const label = createLabelViewModel(item, baseUrl);
+    const qrSize = labelPreset === "avery-5160" ? 54 : 82;
 
     return `
-      <article class="print-label">
+      <article class="print-label ${escapeAttribute(labelPreset)}">
         <div>
           <strong>${escapeHtml(label.title)}</strong>
           <span>${escapeHtml(label.subtitle)}</span>
         </div>
-        ${createBarcodeSvg(label.catalogCode)}
-        <p>${escapeHtml(label.catalogCode)}</p>
+        <div class="label-code-row">
+          ${createQrCodeSvg(label.itemUrl, { size: qrSize, ariaLabel: `QR code for ${label.catalogCode}` })}
+          <div>
+            ${createBarcodeSvg(label.catalogCode)}
+            <p>${escapeHtml(label.catalogCode)}</p>
+          </div>
+        </div>
         <small>${escapeHtml(label.itemUrl)}</small>
       </article>
     `;
@@ -1424,6 +1455,11 @@ export function mountApp({
       render(currentState);
     }
 
+    if (event.target.name === "labelPreset") {
+      currentState.labelPreset = event.target.value;
+      render(currentState);
+    }
+
     if (event.target.name === "photo" && event.target.files?.[0]) {
       currentState.pendingPhotoDataUrl = await imageReader(event.target.files[0]);
       render(currentState);
@@ -1686,6 +1722,42 @@ export function mountApp({
   function getSortLabel(sortBy) {
     return CATALOG_SORT_OPTIONS.find((option) => option.value === sortBy)?.label || "Recently updated";
   }
+}
+
+function getBackupStatus(profile, now = new Date()) {
+  if (!profile.lastBackupAt) {
+    return {
+      status: "due",
+      label: "Backup due",
+      detail: "Export a backup before adding many more items."
+    };
+  }
+
+  const backupDate = new Date(profile.lastBackupAt);
+
+  if (Number.isNaN(backupDate.getTime())) {
+    return {
+      status: "due",
+      label: "Backup due",
+      detail: "The saved backup date could not be read."
+    };
+  }
+
+  const ageDays = Math.max(0, Math.floor((now.getTime() - backupDate.getTime()) / 86400000));
+
+  if (ageDays >= BACKUP_REMINDER_DAYS) {
+    return {
+      status: "due",
+      label: "Backup due",
+      detail: `${ageDays} days since the last export.`
+    };
+  }
+
+  return {
+    status: "ok",
+    label: "Backup current",
+    detail: ageDays === 0 ? "Backed up today." : `${ageDays} days since the last export.`
+  };
 }
 
 function getYardSaleItems(items) {

@@ -348,6 +348,37 @@ svg {
   font-size: 16px;
 }
 
+.backup-panel small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.backup-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.backup-status.ok {
+  color: #0f7a4f;
+  border-color: rgba(15, 122, 79, 0.35);
+  background: rgba(15, 122, 79, 0.1);
+}
+
+.backup-status.due {
+  color: #9a3412;
+  border-color: rgba(154, 52, 18, 0.35);
+  background: rgba(154, 52, 18, 0.1);
+}
+
 .backup-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1228,6 +1259,26 @@ svg {
   display: none;
 }
 
+.label-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inline-field {
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.inline-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .label-sheet {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1246,6 +1297,17 @@ svg {
   page-break-inside: avoid;
 }
 
+.print-label.avery-5160 {
+  min-height: 118px;
+  padding: 7px;
+  gap: 4px;
+}
+
+.print-label.large-tag {
+  min-height: 208px;
+  padding: 14px;
+}
+
 .print-label strong,
 .print-label span,
 .print-label p,
@@ -1262,6 +1324,38 @@ svg {
 .print-label small {
   color: #333333;
   font-size: 10px;
+}
+
+.label-code-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.qr-code {
+  display: block;
+  width: 82px;
+  height: 82px;
+  border: 1px solid #111111;
+}
+
+.print-label.avery-5160 .qr-code {
+  width: 54px;
+  height: 54px;
+}
+
+.print-label.avery-5160 small {
+  display: none;
+}
+
+.print-label.avery-5160 .barcode {
+  height: 36px;
+}
+
+.print-label.large-tag .qr-code {
+  width: 96px;
+  height: 96px;
 }
 
 .barcode {
@@ -1531,9 +1625,31 @@ svg {
     gap: 0.12in;
   }
 
+  .label-sheet.avery-5160 {
+    grid-template-columns: repeat(3, 2.625in);
+    grid-auto-rows: 1in;
+    gap: 0;
+  }
+
+  .label-sheet.large-tag {
+    grid-template-columns: repeat(2, 3.5in);
+    gap: 0.14in;
+  }
+
   .print-label {
     min-height: 1.75in;
     border-radius: 0;
+  }
+
+  .print-label.avery-5160 {
+    width: 2.625in;
+    min-height: 1in;
+    padding: 0.07in;
+  }
+
+  .print-label.large-tag {
+    width: 3.5in;
+    min-height: 2in;
   }
 
   .price-tag-sheet {
