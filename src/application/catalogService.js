@@ -1,4 +1,9 @@
-import { createCollectible, matchesCollectible, updateCollectible } from "../domain/collectible.js";
+import {
+  createCollectible,
+  matchesCollectible,
+  sortCollectibles,
+  updateCollectible
+} from "../domain/collectible.js";
 import {
   candidateToComparable,
   createComparable,
@@ -15,7 +20,7 @@ export function createCatalogService(repository) {
   }
 
   function getItems() {
-    return [...items].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    return sortCollectibles(items);
   }
 
   return {
@@ -26,7 +31,8 @@ export function createCatalogService(repository) {
     },
 
     list(filters = {}) {
-      return getItems().filter((item) => matchesCollectible(item, filters.search, filters.category));
+      const filteredItems = items.filter((item) => matchesCollectible(item, filters.search, filters.category));
+      return sortCollectibles(filteredItems, filters.sortBy);
     },
 
     getById(id) {

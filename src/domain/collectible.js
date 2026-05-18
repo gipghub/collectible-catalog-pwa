@@ -21,6 +21,17 @@ export const CONDITIONS = [
   "Ungraded"
 ];
 
+export const CATALOG_SORT_OPTIONS = [
+  { value: "updated-desc", label: "Recently updated" },
+  { value: "title-asc", label: "Title A-Z" },
+  { value: "title-desc", label: "Title Z-A" },
+  { value: "category-asc", label: "Category" },
+  { value: "maker-asc", label: "Maker" },
+  { value: "value-desc", label: "Value high to low" },
+  { value: "value-asc", label: "Value low to high" },
+  { value: "acquired-desc", label: "Acquired newest" }
+];
+
 export function createCollectible(input, now = new Date()) {
   const id = input.id || crypto.randomUUID();
   const createdAt = input.createdAt || now.toISOString();
@@ -86,10 +97,59 @@ export function matchesCollectible(item, query, category) {
   return matchesCategory && searchable.includes(normalizedQuery);
 }
 
-export function formatMoney(value, currency = "USD") {
-  const amount = Number(value);
+export function sortCollectibles(items, sortBy = "updated-desc") {
+  const sortOption = CATALOG_SORT_OPTIONS.some((option) => option.value === sortBy) ? sortBy : "updated-desc";
+  const sortedItems = [...items];
 
-  if (!Number.isFinite(amount)) {
+  return sortedItems.sort((left, right) => {
+    if (sortOption === "title-asc") {
+      return compareText(left.title, right.title) || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "title-desc") {
+      return compareText(right.title, left.title) || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "category-asc") {
+      return compareText(left.category, right.category)
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "maker-asc") {
+      return compareText(left.maker, right.maker)
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "value-desc") {
+      return compareMoney(left.estimatedValue, right.estimatedValue, "desc")
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "value-asc") {
+      return compareMoney(left.estimatedValue, right.estimatedValue, "asc")
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    if (sortOption === "acquired-desc") {
+      return compareDate(left.acquisitionDate, right.acquisitionDate, "desc")
+        || compareText(left.title, right.title)
+        || compareText(left.catalogCode, right.catalogCode);
+    }
+
+    return compareDate(left.updatedAt, right.updatedAt, "desc")
+      || compareText(left.title, right.title)
+      || compareText(left.catalogCode, right.catalogCode);
+  });
+}
+
+export function formatMoney(value, currency = "USD") {
+  const amount = toMoneyNumber(value);
+
+  if (amount === null) {
     return "No value";
   }
 
@@ -106,6 +166,64 @@ export function formatMoney(value, currency = "USD") {
 function cleanText(value, fallback = "") {
   const text = typeof value === "string" ? value.trim() : "";
   return text || fallback;
+}
+
+function compareText(leftValue, rightValue) {
+  return cleanText(leftValue).localeCompare(cleanText(rightValue), undefined, {
+    sensitivity: "base",
+    numeric: true
+  });
+}
+
+function compareMoney(leftValue, rightValue, direction) {
+  const leftAmount = toMoneyNumber(leftValue);
+  const rightAmount = toMoneyNumber(rightValue);
+  const leftHasValue = leftAmount !== null;
+  const rightHasValue = rightAmount !== null;
+
+  if (!leftHasValue && !rightHasValue) {
+    return 0;
+  }
+
+  if (!leftHasValue) {
+    return 1;
+  }
+
+  if (!rightHasValue) {
+    return -1;
+  }
+
+  return direction === "desc" ? rightAmount - leftAmount : leftAmount - rightAmount;
+}
+
+function toMoneyNumber(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function compareDate(leftValue, rightValue, direction) {
+  const leftTime = Date.parse(leftValue);
+  const rightTime = Date.parse(rightValue);
+  const leftHasValue = Number.isFinite(leftTime);
+  const rightHasValue = Number.isFinite(rightTime);
+
+  if (!leftHasValue && !rightHasValue) {
+    return 0;
+  }
+
+  if (!leftHasValue) {
+    return 1;
+  }
+
+  if (!rightHasValue) {
+    return -1;
+  }
+
+  return direction === "desc" ? rightTime - leftTime : leftTime - rightTime;
 }
 
 function normalizeTags(value) {

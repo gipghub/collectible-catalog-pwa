@@ -1,4 +1,9 @@
-import { CATEGORIES, CONDITIONS, formatMoney } from "../domain/collectible.js";
+import {
+  CATALOG_SORT_OPTIONS,
+  CATEGORIES,
+  CONDITIONS,
+  formatMoney
+} from "../domain/collectible.js";
 import { summarizeComparables } from "../domain/comparable.js";
 import { createLabelViewModel } from "../domain/label.js";
 import {
@@ -24,12 +29,14 @@ export function mountApp({
     labelItemIds: [],
     pendingPhotoDataUrl: "",
     priceChartingToken: comparableProvider.getPriceChartingToken?.() || "",
+    printListItemIds: [],
     profile: profileRepository.load(),
     providerEndpoint: comparableProvider.getEndpoint?.() || "",
     scanError: "",
     scanningItemId: "",
     search: "",
     selectedId: null,
+    sortBy: "updated-desc",
     toast: ""
   };
 
@@ -46,18 +53,17 @@ export function mountApp({
     applyTheme(currentState.profile.theme);
 
     const allItems = service.list();
-    const filteredItems = service.list({
-      search: currentState.search,
-      category: currentState.category
-    });
+    const filteredItems = service.list(getCatalogQuery(currentState));
     const editingItem = currentState.editingId ? service.getById(currentState.editingId) : null;
     const selectedItem = currentState.selectedId ? service.getById(currentState.selectedId) : null;
     const labelItems = currentState.labelItemIds.map((id) => service.getById(id)).filter(Boolean);
+    const printListItems = currentState.printListItemIds.map((id) => service.getById(id)).filter(Boolean);
 
     root.innerHTML = [
       renderHeader(currentState, filteredItems.length),
       renderMain(currentState, allItems, filteredItems, editingItem),
       renderLabelWorkbench(labelItems),
+      renderInventoryPrintWorkbench(printListItems, currentState),
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
       currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
@@ -97,6 +103,10 @@ export function mountApp({
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"></path></svg>
             <input name="search" value="${escapeAttribute(currentState.search)}" placeholder="Search by title, code, maker, tag">
           </label>
+          <button class="button secondary" type="button" data-action="print-catalog-list">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+            Print List
+          </button>
           <button class="button secondary" type="button" data-action="print-filtered-labels">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
             Labels
@@ -127,6 +137,7 @@ export function mountApp({
         <aside class="side-panel">
           ${renderStats(allItems)}
           ${renderCategoryFilter(currentState)}
+          ${renderSortControl(currentState)}
           <div class="process-note">
             <h2>Clean Workflow</h2>
             <p>Capture, catalog, compare, label. Each record gets a stable code before it ever reaches a shelf or display case.</p>
@@ -146,6 +157,23 @@ export function mountApp({
           ${renderCatalogGrid(filteredItems)}
         </section>
       </main>
+    `;
+  }
+
+  function renderSortControl(currentState) {
+    const options = CATALOG_SORT_OPTIONS
+      .map((option) => `
+        <option value="${escapeAttribute(option.value)}" ${option.value === currentState.sortBy ? "selected" : ""}>
+          ${escapeHtml(option.label)}
+        </option>
+      `)
+      .join("");
+
+    return `
+      <label class="field">
+        <span>Sort by</span>
+        <select name="sortBy">${options}</select>
+      </label>
     `;
   }
 
@@ -506,6 +534,73 @@ export function mountApp({
     `;
   }
 
+  function renderInventoryPrintWorkbench(items, currentState) {
+    if (items.length === 0) {
+      return `<section class="inventory-print-workbench" aria-live="polite"></section>`;
+    }
+
+    const totalValue = items.reduce((sum, item) => sum + (Number(item.estimatedValue) || 0), 0);
+    const generatedAt = new Date().toLocaleString();
+    const filterSummary = [
+      currentState.category === "All" ? "All categories" : currentState.category,
+      currentState.search ? `Search: ${currentState.search}` : "",
+      `Sort: ${getSortLabel(currentState.sortBy)}`
+    ].filter(Boolean).join(" | ");
+
+    return `
+      <section class="inventory-print-workbench" aria-live="polite">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Print queue</p>
+            <h2>Catalog Inventory List</h2>
+          </div>
+          <button class="button primary" type="button" data-action="print-now">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"></path></svg>
+            Print
+          </button>
+        </div>
+        <div class="inventory-print-header">
+          <div>
+            <strong>${escapeHtml(currentState.profile.collectionName)}</strong>
+            <span>${escapeHtml(filterSummary)}</span>
+          </div>
+          <div>
+            <strong>${items.length} items</strong>
+            <span>${escapeHtml(formatMoney(totalValue, currentState.profile.currency))} total | ${escapeHtml(generatedAt)}</span>
+          </div>
+        </div>
+        <div class="inventory-print-table-wrap">
+          <table class="inventory-print-table">
+            <thead>
+              <tr>
+                <th>Catalog Code</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Condition</th>
+                <th>Maker / Series</th>
+                <th>Estimated</th>
+                <th>Comps</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item) => `
+                <tr>
+                  <td>${escapeHtml(item.catalogCode)}</td>
+                  <td>${escapeHtml(item.title)}</td>
+                  <td>${escapeHtml(item.category)}</td>
+                  <td>${escapeHtml(item.condition)}</td>
+                  <td>${escapeHtml([item.maker, item.series].filter(Boolean).join(" / ") || "Not set")}</td>
+                  <td>${escapeHtml(formatMoney(item.estimatedValue, currentState.profile.currency))}</td>
+                  <td>${item.comparables.length}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+
   function renderProfileDialog(profile) {
     return `
       <dialog class="profile-dialog" id="profileDialog">
@@ -653,17 +748,30 @@ export function mountApp({
 
     if (action === "print-selected-label") {
       currentState.labelItemIds = [id];
+      currentState.printListItemIds = [];
       render(currentState);
       requestAnimationFrame(() => window.print());
     }
 
     if (action === "print-filtered-labels") {
-      const items = service.list({
-        search: currentState.search,
-        category: currentState.category
-      });
+      const items = service.list(getCatalogQuery(currentState));
       currentState.labelItemIds = items.map((item) => item.id);
+      currentState.printListItemIds = [];
       render(currentState);
+    }
+
+    if (action === "print-catalog-list") {
+      const items = service.list(getCatalogQuery(currentState));
+
+      if (items.length === 0) {
+        showToast(currentState, "No matching catalog items to print.");
+        return;
+      }
+
+      currentState.printListItemIds = items.map((item) => item.id);
+      currentState.labelItemIds = [];
+      render(currentState);
+      requestAnimationFrame(() => window.print());
     }
 
     if (action === "print-now") {
@@ -700,6 +808,7 @@ export function mountApp({
       } else {
         const item = service.create(payload);
         currentState.labelItemIds = [item.id];
+        currentState.printListItemIds = [];
         showToast(currentState, "Catalog entry created.");
       }
 
@@ -745,6 +854,11 @@ export function mountApp({
   async function handleChange(event, currentState) {
     if (event.target.name === "categoryFilter") {
       currentState.category = event.target.value;
+      render(currentState);
+    }
+
+    if (event.target.name === "sortBy") {
+      currentState.sortBy = event.target.value;
       render(currentState);
     }
 
@@ -843,6 +957,18 @@ export function mountApp({
     link.download = "collectible-catalog-export.json";
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function getCatalogQuery(currentState) {
+    return {
+      search: currentState.search,
+      category: currentState.category,
+      sortBy: currentState.sortBy
+    };
+  }
+
+  function getSortLabel(sortBy) {
+    return CATALOG_SORT_OPTIONS.find((option) => option.value === sortBy)?.label || "Recently updated";
   }
 }
 

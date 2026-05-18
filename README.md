@@ -33,11 +33,13 @@ The app stores catalog data in the browser with `localStorage`. Photos are resiz
 - Camera/photo capture through the device camera or file picker.
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
+- Sortable catalog views by recent update, title, category, maker, value, and acquisition date.
 - Comparable-search links for marketplaces and web sources.
 - Direct PriceCharting API token support for guide-value candidates.
 - Provider-ready comparable scanning with accepted/rejected candidate review.
 - Manual comparable sale records with range and average summary.
 - Persistent user profile settings with dark, light, or system theme.
+- Printable inventory lists that respect the current search, category filter, and sort order.
 - Printable labels with catalog code, item URL, and Code 128 barcode.
 - Clean Code-oriented folder structure:
   - `src/domain`: business rules and entities.
