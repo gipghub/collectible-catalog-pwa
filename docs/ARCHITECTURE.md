@@ -17,7 +17,7 @@ This starter is a Progressive Web App. It runs on desktop browsers and mobile br
 : Coordinates use cases such as creating entries, updating records, deleting items, and adding comparable sales.
 
 `infrastructure`
-: Talks to browser capabilities such as `localStorage`, canvas image processing, barcode rendering, and marketplace search-link generation.
+: Talks to browser capabilities such as IndexedDB, canvas image processing, barcode/QR rendering, sync adapters, and marketplace search-link generation.
 
 `ui`
 : Renders screens, handles DOM events, and delegates business decisions to application services.
@@ -75,5 +75,10 @@ Each catalog item receives a stable catalog code. Labels include:
 - Catalog code.
 - Direct catalog URL.
 - Code 128 barcode for scanning the catalog code.
+- QR code for opening the catalog entry URL.
 
-Scanning the barcode returns the catalog code, which can be pasted into search to find the entry. Future label iterations can add QR codes and label-stock presets.
+Scanning the barcode returns the catalog code, which can be pasted into search to find the entry. Scanning the QR code opens the catalog item URL directly. The print workbench supports compact tags, Avery 5160 sheets, and large tags so the same catalog data can fit common storage and sale-day workflows.
+
+## Local Safety
+
+For one-person use, the app can run fully local. IndexedDB holds the working catalog, and JSON backups are the safety valve. Importing a backup opens a restore preview first, showing item counts, photo counts, profile information, and sample titles before the user chooses to replace the local catalog.

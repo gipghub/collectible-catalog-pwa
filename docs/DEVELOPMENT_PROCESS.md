@@ -18,7 +18,8 @@
 3. Add infrastructure adapters for browser APIs or external services.
 4. Render the smallest UI needed for the use case.
 5. Verify on desktop and narrow mobile viewports.
-6. Add tests once a build toolchain is introduced.
+6. Add or update focused smoke tests for touched behavior.
+7. Run `npm run check` and `npm test` before pushing.
 
 ## Data Privacy Notes
 
