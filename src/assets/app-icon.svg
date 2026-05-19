@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Collectible Catalog icon">
+  <rect width="512" height="512" rx="108" fill="#247b73"/>
+  <path d="M126 142h260v228H126z" fill="#f8faf7"/>
+  <path d="M154 174h204M154 226h204M154 278h138" fill="none" stroke="#134e4a" stroke-linecap="round" stroke-width="22"/>
+  <circle cx="350" cy="324" r="44" fill="#d7b35d"/>
+  <circle cx="350" cy="324" r="25" fill="none" stroke="#8a641a" stroke-width="10"/>
+  <path d="M126 142h260v58H126z" fill="#dbefe8"/>
+</svg>

@@ -63,9 +63,11 @@ npm run test:backend
 ## What Is Included
 
 - Mobile-friendly PWA shell for web and mobile browser use.
+- Install prompt support for browsers that allow adding the PWA to the home screen.
 - Camera/photo capture through the device camera or file picker.
 - Local-first IndexedDB catalog storage for one-person offline use.
 - Export/import JSON backups with profile settings, item records, stored photo data, and a restore preview before replacing local data.
+- Move / Backup flow for saving a backup file, sending it to a laptop with the device share sheet, restoring from a file, or printing the catalog.
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
 - Sortable catalog views by recent update, title, category, maker, value, and acquisition date.
@@ -95,11 +97,11 @@ npm run test:backend
 
 ## Next Product Milestones
 
-1. Replace the local demo auth with a real identity provider and encrypted secrets.
-2. Move disk-backed photo storage to object storage such as S3, Supabase Storage, or Firebase Storage.
-3. Add collection sharing and role-based access for relatives.
+1. Add tested install instructions for iPhone, iPad, Android, Windows, and Mac.
+2. Package an optional laptop desktop build that stores data in a local app folder.
+3. Add a one-click "copy backup to USB folder" flow for the desktop version.
 4. Add a hosted comparable provider endpoint with eBay Marketplace Insights, WorthPoint, or auction-house credentials stored server-side.
-5. Add optional cloud backup for users who want device-to-device recovery without managing JSON files.
+5. Add optional cloud sync only if the owner later decides they want device-to-device sync.
 6. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), [docs/CLOUD_STORAGE_PLAN.md](docs/CLOUD_STORAGE_PLAN.md), [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md), [docs/LOCAL_DATABASE.md](docs/LOCAL_DATABASE.md), and [docs/PRINT_CHECKLIST.md](docs/PRINT_CHECKLIST.md) for the design approach and local-use guidance.

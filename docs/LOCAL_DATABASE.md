@@ -21,8 +21,9 @@ IndexedDB data is private to the browser profile and device. It does not automat
 
 For one-person use, backup/restore is the main safety feature:
 
-- Export catalog backup.
-- Import catalog backup with a restore preview before replacement.
+- Use **Move / Backup** to save a catalog file.
+- Use **Send To Laptop** to open the device share sheet when the browser supports file sharing.
+- Import a catalog backup with a restore preview before replacement.
 - Preserve profile settings and photo data stored in catalog records.
 - Record the last backup date in the profile.
 
@@ -47,7 +48,7 @@ Older prototype exports that were just an array of items can still be imported.
 
 Importing a backup first opens a restore preview with the backup date, item count, current item count, photo count, profile name, and sample item names. Choosing **Restore Backup** replaces the catalog on the current device.
 
-The sidebar also shows a backup status reminder so a local-only catalog does not go too long without an export.
+The sidebar also shows a backup status reminder so a local-only catalog does not go too long without an export. The **Move / Backup** dialog keeps the main local-only choices in one place: save a backup file, send it to a laptop, restore from a file, or print the current catalog list.
 
 ## Cloud Remains Optional
 

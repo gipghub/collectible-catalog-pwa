@@ -810,6 +810,7 @@ svg {
 
 .profile-dialog,
 .sale-share-dialog,
+.transfer-dialog,
 .backup-preview-dialog {
   width: min(620px, calc(100vw - 28px));
   padding: 0;
@@ -820,6 +821,7 @@ svg {
 
 .profile-dialog::backdrop,
 .sale-share-dialog::backdrop,
+.transfer-dialog::backdrop,
 .backup-preview-dialog::backdrop {
   background: rgba(0, 0, 0, 0.48);
 }
@@ -837,6 +839,14 @@ svg {
   background: var(--surface);
 }
 
+.transfer-dialog {
+  width: min(820px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 22px;
+  background: var(--surface);
+}
+
 .backup-preview-dialog {
   max-height: calc(100vh - 28px);
   overflow: auto;
@@ -847,6 +857,107 @@ svg {
 .sale-share-layout {
   display: grid;
   gap: 14px;
+}
+
+.transfer-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.transfer-summary article {
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.transfer-summary span {
+  display: block;
+  font-size: 20px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.transfer-summary p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.transfer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.transfer-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: start;
+  min-height: 96px;
+  padding: 14px;
+  color: var(--ink);
+  background: var(--panel-surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.transfer-card svg {
+  grid-row: span 2;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.transfer-card span {
+  font-weight: 900;
+}
+
+.transfer-card small {
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.transfer-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.transfer-steps article {
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.transfer-steps strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.transfer-steps ol {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .sale-share-preview {
@@ -1709,7 +1820,10 @@ svg {
   .sale-price-grid,
   .sale-share-actions,
   .sale-share-preview,
-  .backup-preview-grid {
+  .backup-preview-grid,
+  .transfer-summary,
+  .transfer-actions,
+  .transfer-steps {
     grid-template-columns: 1fr;
   }
 
@@ -1756,6 +1870,8 @@ svg {
   .toast,
   .yard-sale-workbench,
   .sale-share-dialog,
+  .transfer-dialog,
+  .backup-preview-dialog,
   .label-workbench > .section-heading,
   .inventory-print-workbench > .section-heading,
   .price-tag-workbench > .section-heading,

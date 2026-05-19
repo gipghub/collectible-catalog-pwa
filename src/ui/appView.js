@@ -60,7 +60,9 @@ export function mountApp({
     authSubmitting: false,
     category: "All",
     editingId: null,
+    installPrompt: null,
     isProfileOpen: false,
+    isTransferOpen: false,
     labelItemIds: [],
     labelPreset: "compact",
     pendingBackup: null,
@@ -85,6 +87,15 @@ export function mountApp({
   root.addEventListener("submit", (event) => handleSubmit(event, state));
   root.addEventListener("input", (event) => handleInput(event, state));
   root.addEventListener("change", (event) => handleChange(event, state));
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.installPrompt = event;
+    render(state);
+  });
+  window.addEventListener("appinstalled", () => {
+    state.installPrompt = null;
+    showToast(state, "App installed.");
+  });
   window.addEventListener("hashchange", () => openItemFromHash(state));
 
   service.subscribe(() => render(state));
@@ -124,6 +135,7 @@ export function mountApp({
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
       saleShareItem ? renderSaleShareDialog(saleShareItem, currentState) : "",
       currentState.pendingBackup ? renderBackupPreviewDialog(currentState.pendingBackup, allItems) : "",
+      currentState.isTransferOpen ? renderTransferDialog(currentState, allItems) : "",
       currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
     ].join("");
@@ -158,6 +170,17 @@ export function mountApp({
       saleShareDialog.showModal();
     }
 
+    if (currentState.isTransferOpen) {
+      const transferDialog = root.querySelector("#transferDialog");
+      transferDialog.addEventListener("close", () => {
+        if (currentState.isTransferOpen) {
+          currentState.isTransferOpen = false;
+          render(currentState);
+        }
+      });
+      transferDialog.showModal();
+    }
+
     if (currentState.pendingBackup) {
       const backupDialog = root.querySelector("#backupPreviewDialog");
       backupDialog.addEventListener("close", () => {
@@ -183,6 +206,12 @@ export function mountApp({
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"></path></svg>
             <input name="search" value="${escapeAttribute(currentState.search)}" placeholder="Search by title, code, maker, tag">
           </label>
+          ${currentState.installPrompt ? `
+            <button class="button secondary" type="button" data-action="install-app">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"></path></svg>
+              Install App
+            </button>
+          ` : ""}
           <button class="button secondary" type="button" data-action="print-catalog-list">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
             Print List
@@ -391,17 +420,92 @@ export function mountApp({
           <small>${escapeHtml(backupStatus.detail)}</small>
         </div>
         <div class="backup-actions">
-          <button class="button secondary" type="button" data-action="export-backup">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"></path></svg>
-            Export
+          <button class="button primary" type="button" data-action="open-transfer">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>
+            Move / Backup
           </button>
-          <label class="button secondary backup-import-button">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21V9m0 0 4 4m-4-4-4 4M4 3h16"></path></svg>
-            Import
-            <input name="backupFile" type="file" accept="application/json,.json">
-          </label>
         </div>
       </section>
+    `;
+  }
+
+  function renderTransferDialog(currentState, items) {
+    const backupStatus = getBackupStatus(currentState.profile);
+    const lastBackupLabel = currentState.profile.lastBackupAt
+      ? new Date(currentState.profile.lastBackupAt).toLocaleString()
+      : "No backup saved yet";
+    const photoCount = items.filter((item) => item.photoDataUrl).length;
+
+    return `
+      <dialog class="transfer-dialog" id="transferDialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Local only</p>
+            <h2>Move / Backup Catalog</h2>
+          </div>
+          <button class="icon-button" type="button" data-action="close-transfer" aria-label="Close move and backup">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <div class="transfer-summary">
+          <article>
+            <span>${items.length}</span>
+            <p>Items on this device</p>
+          </article>
+          <article>
+            <span>${photoCount}</span>
+            <p>Photos saved locally</p>
+          </article>
+          <article>
+            <span>${escapeHtml(backupStatus.label)}</span>
+            <p>${escapeHtml(lastBackupLabel)}</p>
+          </article>
+        </div>
+
+        <div class="transfer-actions">
+          <button class="transfer-card" type="button" data-action="export-backup">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"></path></svg>
+            <span>Save Backup File</span>
+            <small>Download one file that keeps items, photos, settings, and sale notes.</small>
+          </button>
+          <button class="transfer-card" type="button" data-action="share-backup">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14"></path></svg>
+            <span>Send To Laptop</span>
+            <small>Use the phone share sheet when available. Otherwise it saves a backup file.</small>
+          </button>
+          <label class="transfer-card backup-import-button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21V9m0 0 4 4m-4-4-4 4M4 3h16"></path></svg>
+            <span>Restore From File</span>
+            <small>Pick a backup file on this phone, tablet, or laptop.</small>
+            <input name="backupFile" type="file" accept="application/json,.json">
+          </label>
+          <button class="transfer-card" type="button" data-action="print-catalog-list">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"></path></svg>
+            <span>Print Catalog</span>
+            <small>Print the currently filtered and sorted list.</small>
+          </button>
+        </div>
+
+        <div class="transfer-steps">
+          <article>
+            <strong>Phone to laptop</strong>
+            <ol>
+              <li>Tap <b>Send To Laptop</b> or <b>Save Backup File</b>.</li>
+              <li>Move that backup file to the laptop.</li>
+              <li>Open this app on the laptop and choose <b>Restore From File</b>.</li>
+            </ol>
+          </article>
+          <article>
+            <strong>Keep it safe</strong>
+            <ol>
+              <li>Save a backup after every big cataloging session.</li>
+              <li>Keep a copy in Documents, a USB drive, or another safe place.</li>
+              <li>Print the catalog before a yard sale or insurance review.</li>
+            </ol>
+          </article>
+        </div>
+      </dialog>
     `;
   }
 
@@ -1295,6 +1399,10 @@ export function mountApp({
       await syncCatalog(currentState);
     }
 
+    if (action === "install-app") {
+      await installApp(currentState);
+    }
+
     if (action === "sign-out") {
       sessionRepository?.clear?.();
       window.location.reload();
@@ -1302,6 +1410,16 @@ export function mountApp({
 
     if (action === "open-profile") {
       currentState.isProfileOpen = true;
+      render(currentState);
+    }
+
+    if (action === "open-transfer") {
+      currentState.isTransferOpen = true;
+      render(currentState);
+    }
+
+    if (action === "close-transfer") {
+      currentState.isTransferOpen = false;
       render(currentState);
     }
 
@@ -1491,6 +1609,10 @@ export function mountApp({
 
     if (action === "export-backup" || action === "export-json") {
       exportCatalogBackup(currentState);
+    }
+
+    if (action === "share-backup") {
+      await shareCatalogBackup(currentState);
     }
   }
 
@@ -1797,28 +1919,85 @@ export function mountApp({
   }
 
   function exportCatalogBackup(currentState) {
-    const now = new Date().toISOString();
+    const backupFile = createCatalogBackupFile(currentState);
+    downloadBackupFile(backupFile);
+    saveProfile(currentState, { lastBackupAt: backupFile.createdAt });
+    showToast(currentState, "Backup file saved.");
+  }
+
+  async function shareCatalogBackup(currentState) {
+    const backupFile = createCatalogBackupFile(currentState);
+
+    if (navigator.share && navigator.canShare && typeof File !== "undefined") {
+      const file = new File([backupFile.blob], backupFile.fileName, { type: backupFile.blob.type });
+
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Collectible Catalog Backup",
+            text: "Catalog backup file for the collectible catalog app."
+          });
+          saveProfile(currentState, { lastBackupAt: backupFile.createdAt });
+          showToast(currentState, "Backup ready to send.");
+          return;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            return;
+          }
+        }
+      }
+    }
+
+    downloadBackupFile(backupFile);
+    saveProfile(currentState, { lastBackupAt: backupFile.createdAt });
+    showToast(currentState, "Share was not available, so a backup file was saved.");
+  }
+
+  async function installApp(currentState) {
+    const prompt = currentState.installPrompt;
+
+    if (!prompt) {
+      showToast(currentState, "Use the browser menu to add this app to the home screen.");
+      return;
+    }
+
+    prompt.prompt();
+    const choice = await prompt.userChoice;
+    currentState.installPrompt = null;
+    showToast(currentState, choice.outcome === "accepted" ? "App install started." : "Install skipped.");
+  }
+
+  function createCatalogBackupFile(currentState) {
+    const createdAt = new Date().toISOString();
     const backup = createCatalogBackup({
       items: service.list(),
       profile: currentState.profile,
-      createdAt: now
+      createdAt
     });
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+
+    return {
+      blob,
+      createdAt,
+      fileName: `collectible-catalog-backup-${createdAt.slice(0, 10)}.json`
+    };
+  }
+
+  function downloadBackupFile({ blob, fileName }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `collectible-catalog-backup-${now.slice(0, 10)}.json`;
+    link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
-
-    saveProfile(currentState, { lastBackupAt: now });
-    showToast(currentState, "Backup exported.");
   }
 
   async function importCatalogBackup(file, currentState) {
     try {
       const backup = parseCatalogBackup(await readTextFile(file));
       currentState.pendingBackup = backup;
+      currentState.isTransferOpen = false;
       render(currentState);
     } catch (error) {
       showToast(currentState, error.message || "Backup import failed.");

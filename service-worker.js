@@ -1,9 +1,10 @@
-const CACHE_NAME = "collectible-catalog-v21";
+const CACHE_NAME = "collectible-catalog-v22";
 const APP_FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./src/styles.css",
+  "./src/assets/app-icon.svg",
   "./src/assets/collectibles-watermark.svg",
   "./src/main.js",
   "./src/config/appConfig.js",
