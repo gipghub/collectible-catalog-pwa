@@ -31,3 +31,22 @@ export function parseCatalogBackup(input) {
     createdAt: payload.createdAt || new Date().toISOString()
   });
 }
+
+export function createBackupPreview(backup, currentItems = []) {
+  const items = Array.isArray(backup.items) ? backup.items : [];
+  const current = Array.isArray(currentItems) ? currentItems : [];
+
+  return {
+    createdAt: backup.createdAt || "",
+    itemCount: items.length,
+    currentItemCount: current.length,
+    photoCount: items.filter((item) => Boolean(item.photoDataUrl)).length,
+    profileName: cleanPreviewText(backup.profile?.displayName || backup.profile?.collectionName),
+    sampleTitles: items.slice(0, 4).map((item) => cleanPreviewText(item.title, "Untitled item"))
+  };
+}
+
+function cleanPreviewText(value, fallback = "") {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || fallback;
+}

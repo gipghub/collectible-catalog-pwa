@@ -1,5 +1,6 @@
 import {
   createCatalogBackup,
+  createBackupPreview,
   parseCatalogBackup
 } from "../domain/catalogBackup.js";
 import {
@@ -62,6 +63,7 @@ export function mountApp({
     isProfileOpen: false,
     labelItemIds: [],
     labelPreset: "compact",
+    pendingBackup: null,
     pendingPhotoDataUrl: "",
     priceChartingToken: comparableProvider.getPriceChartingToken?.() || "",
     priceTagItemIds: [],
@@ -121,6 +123,7 @@ export function mountApp({
       renderYardSalePrintWorkbench(saleListItems, currentState),
       selectedItem ? renderDetailDialog(selectedItem, currentState) : "",
       saleShareItem ? renderSaleShareDialog(saleShareItem, currentState) : "",
+      currentState.pendingBackup ? renderBackupPreviewDialog(currentState.pendingBackup, allItems) : "",
       currentState.isProfileOpen ? renderProfileDialog(currentState.profile) : "",
       currentState.toast ? `<p class="toast" role="status">${escapeHtml(currentState.toast)}</p>` : ""
     ].join("");
@@ -153,6 +156,17 @@ export function mountApp({
         }
       });
       saleShareDialog.showModal();
+    }
+
+    if (currentState.pendingBackup) {
+      const backupDialog = root.querySelector("#backupPreviewDialog");
+      backupDialog.addEventListener("close", () => {
+        if (currentState.pendingBackup) {
+          currentState.pendingBackup = null;
+          render(currentState);
+        }
+      });
+      backupDialog.showModal();
     }
   }
 
@@ -256,6 +270,7 @@ export function mountApp({
       <main class="app-shell">
         <aside class="side-panel">
           ${renderStats(allItems)}
+          ${renderFirstRunChecklist(allItems, currentState)}
           ${renderCategoryFilter(currentState)}
           ${renderSortControl(currentState)}
           ${renderBackupPanel(currentState)}
@@ -278,6 +293,44 @@ export function mountApp({
           ${renderCatalogGrid(filteredItems)}
         </section>
       </main>
+    `;
+  }
+
+  function renderFirstRunChecklist(items, currentState) {
+    if (currentState.profile.onboardingDismissedAt) {
+      return "";
+    }
+
+    const steps = getFirstRunSteps(items, currentState.profile);
+    const completedCount = steps.filter((step) => step.completed).length;
+
+    if (completedCount === steps.length) {
+      return "";
+    }
+
+    return `
+      <section class="first-run-panel" aria-label="Getting started checklist">
+        <div class="checklist-heading">
+          <div>
+            <p class="eyebrow">Getting started</p>
+            <strong>${completedCount} of ${steps.length} done</strong>
+          </div>
+          <button class="icon-button small" type="button" data-action="dismiss-onboarding" aria-label="Hide getting started checklist">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <ol class="checklist">
+          ${steps.map((step) => `
+            <li class="${step.completed ? "complete" : ""}">
+              <span aria-hidden="true"></span>
+              <div>
+                <strong>${escapeHtml(step.title)}</strong>
+                <small>${escapeHtml(step.detail)}</small>
+              </div>
+            </li>
+          `).join("")}
+        </ol>
+      </section>
     `;
   }
 
@@ -349,6 +402,60 @@ export function mountApp({
           </label>
         </div>
       </section>
+    `;
+  }
+
+  function renderBackupPreviewDialog(backup, currentItems) {
+    const preview = createBackupPreview(backup, currentItems);
+    const createdLabel = preview.createdAt
+      ? new Date(preview.createdAt).toLocaleString()
+      : "Unknown date";
+    const sampleList = preview.sampleTitles.length > 0
+      ? preview.sampleTitles.map((title) => `<li>${escapeHtml(title)}</li>`).join("")
+      : "<li>No item names found</li>";
+
+    return `
+      <dialog class="backup-preview-dialog" id="backupPreviewDialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Restore preview</p>
+            <h2>Review Backup</h2>
+          </div>
+          <button class="icon-button" type="button" data-action="close-backup-preview" aria-label="Close restore preview">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="backup-preview-grid">
+          <article>
+            <span>${preview.itemCount}</span>
+            <p>Items in backup</p>
+          </article>
+          <article>
+            <span>${preview.currentItemCount}</span>
+            <p>Items now</p>
+          </article>
+          <article>
+            <span>${preview.photoCount}</span>
+            <p>Photos in backup</p>
+          </article>
+        </div>
+        <dl class="backup-preview-details">
+          <div><dt>Backup date</dt><dd>${escapeHtml(createdLabel)}</dd></div>
+          <div><dt>Profile</dt><dd>${escapeHtml(preview.profileName || "No profile name")}</dd></div>
+        </dl>
+        <div class="backup-sample">
+          <strong>Sample items</strong>
+          <ul>${sampleList}</ul>
+        </div>
+        <p class="warning-text">Restoring replaces the catalog stored on this device. Export the current catalog first if you want a rollback point.</p>
+        <div class="dialog-actions">
+          <button class="button secondary" type="button" data-action="close-backup-preview">Cancel</button>
+          <button class="button primary" type="button" data-action="confirm-backup-restore">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+            Restore Backup
+          </button>
+        </div>
+      </dialog>
     `;
   }
 
@@ -1244,6 +1351,20 @@ export function mountApp({
       closeSaleShare(currentState);
     }
 
+    if (action === "close-backup-preview") {
+      currentState.pendingBackup = null;
+      render(currentState);
+    }
+
+    if (action === "confirm-backup-restore") {
+      restorePendingBackup(currentState);
+    }
+
+    if (action === "dismiss-onboarding") {
+      saveProfile(currentState, { onboardingDismissedAt: new Date().toISOString() });
+      showToast(currentState, "Getting started checklist hidden.");
+    }
+
     if (action === "copy-sale-listing") {
       await copySaleListing(id, currentState);
     }
@@ -1300,6 +1421,7 @@ export function mountApp({
     if (action === "print-selected-label") {
       clearPrintQueues(currentState);
       currentState.labelItemIds = [id];
+      markLabelsPrinted(currentState);
       render(currentState);
       requestAnimationFrame(() => window.print());
     }
@@ -1361,6 +1483,9 @@ export function mountApp({
     }
 
     if (action === "print-now") {
+      if (currentState.labelItemIds.length > 0) {
+        markLabelsPrinted(currentState);
+      }
       window.print();
     }
 
@@ -1522,6 +1647,10 @@ export function mountApp({
   function saveProfile(currentState, input) {
     currentState.profile = createUserProfile({ ...currentState.profile, ...input });
     profileRepository.save(currentState.profile);
+  }
+
+  function markLabelsPrinted(currentState) {
+    saveProfile(currentState, { lastLabelPrintedAt: new Date().toISOString() });
   }
 
   function applyTheme(theme) {
@@ -1687,12 +1816,23 @@ export function mountApp({
   }
 
   async function importCatalogBackup(file, currentState) {
-    if (!confirm("Import this backup and replace the current catalog on this device?")) {
+    try {
+      const backup = parseCatalogBackup(await readTextFile(file));
+      currentState.pendingBackup = backup;
+      render(currentState);
+    } catch (error) {
+      showToast(currentState, error.message || "Backup import failed.");
+    }
+  }
+
+  function restorePendingBackup(currentState) {
+    const backup = currentState.pendingBackup;
+
+    if (!backup) {
       return;
     }
 
     try {
-      const backup = parseCatalogBackup(await readTextFile(file));
       service.replaceAll(backup.items);
 
       if (backup.profile && Object.keys(backup.profile).length > 0) {
@@ -1703,6 +1843,7 @@ export function mountApp({
       }
 
       clearPrintQueues(currentState);
+      currentState.pendingBackup = null;
       currentState.selectedId = null;
       currentState.editingId = null;
       showToast(currentState, `Backup restored with ${backup.items.length} items.`);
@@ -1758,6 +1899,36 @@ function getBackupStatus(profile, now = new Date()) {
     label: "Backup current",
     detail: ageDays === 0 ? "Backed up today." : `${ageDays} days since the last export.`
   };
+}
+
+function getFirstRunSteps(items, profile) {
+  return [
+    {
+      title: "Add the first item",
+      detail: "Create one catalog entry with a title and category.",
+      completed: items.length > 0
+    },
+    {
+      title: "Add a photo",
+      detail: "Use Capture so the item is easy to recognize later.",
+      completed: items.some((item) => Boolean(item.photoDataUrl))
+    },
+    {
+      title: "Export a backup",
+      detail: "Save a JSON backup after the first useful batch.",
+      completed: Boolean(profile.lastBackupAt)
+    },
+    {
+      title: "Print labels",
+      detail: "Print cross-reference labels for storage bins or tags.",
+      completed: Boolean(profile.lastLabelPrintedAt)
+    },
+    {
+      title: "Mark sale items",
+      detail: "Set Sell, Unsure, Donated, or Sold for yard-sale planning.",
+      completed: items.some((item) => item.saleStatus && item.saleStatus !== "Keep")
+    }
+  ];
 }
 
 function getYardSaleItems(items) {

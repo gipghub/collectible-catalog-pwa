@@ -63,7 +63,7 @@ npm run test:backend
 - Mobile-friendly PWA shell for web and mobile browser use.
 - Camera/photo capture through the device camera or file picker.
 - Local-first IndexedDB catalog storage for one-person offline use.
-- Export/import JSON backups with profile settings, item records, and stored photo data.
+- Export/import JSON backups with profile settings, item records, stored photo data, and a restore preview before replacing local data.
 - Collectible entries with category, condition, maker, value, tags, notes, and photo.
 - Search and category filtering.
 - Sortable catalog views by recent update, title, category, maker, value, and acquisition date.
@@ -80,6 +80,7 @@ npm run test:backend
 - Printable public price tags plus a private seller sheet for sale-day tracking.
 - Printable labels with catalog code, item URL, Code 128 barcode, scannable QR code, and compact/Avery 5160/large-tag sheet presets.
 - Backup reminder status so a local-only catalog does not go too long without an export.
+- First-run checklist for adding an item, taking a photo, exporting a backup, printing labels, and marking yard-sale items.
 - Sync-ready repository boundary with visible local/sync status in the app header.
 - Local production API slice with bearer-token auth, catalog sync, and disk-backed photo storage.
 - Clean Code-oriented folder structure:

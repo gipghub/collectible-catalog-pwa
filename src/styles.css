@@ -105,6 +105,7 @@ svg {
 .section-heading h2,
 .section-heading h3,
 .dialog-header h2,
+.dialog-heading h2,
 .empty-state h3,
 .process-note h2 {
   margin: 0;
@@ -331,6 +332,86 @@ svg {
   display: grid;
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.first-run-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--panel-surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.checklist-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.checklist-heading strong {
+  display: block;
+  font-size: 16px;
+}
+
+.icon-button.small {
+  width: 32px;
+  height: 32px;
+}
+
+.checklist {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.checklist li > span {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.checklist li.complete > span {
+  position: relative;
+  background: #0f7a4f;
+  border-color: #0f7a4f;
+}
+
+.checklist li.complete > span::after {
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.checklist strong {
+  display: block;
+  font-size: 13px;
+}
+
+.checklist small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .backup-panel {
@@ -728,7 +809,8 @@ svg {
 }
 
 .profile-dialog,
-.sale-share-dialog {
+.sale-share-dialog,
+.backup-preview-dialog {
   width: min(620px, calc(100vw - 28px));
   padding: 0;
   border: 0;
@@ -737,7 +819,8 @@ svg {
 }
 
 .profile-dialog::backdrop,
-.sale-share-dialog::backdrop {
+.sale-share-dialog::backdrop,
+.backup-preview-dialog::backdrop {
   background: rgba(0, 0, 0, 0.48);
 }
 
@@ -748,6 +831,13 @@ svg {
 
 .sale-share-dialog {
   width: min(760px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: 22px;
+  background: var(--surface);
+}
+
+.backup-preview-dialog {
   max-height: calc(100vh - 28px);
   overflow: auto;
   padding: 22px;
@@ -881,10 +971,75 @@ svg {
   margin-bottom: 18px;
 }
 
+.dialog-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
 .dialog-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.backup-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.backup-preview-grid article,
+.backup-preview-details div,
+.backup-sample {
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.backup-preview-grid span {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.backup-preview-grid p,
+.backup-preview-details dt {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.backup-preview-details {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.backup-preview-details dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.backup-sample ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+  margin: 8px 0 0;
+}
+
+.warning-text {
+  margin: 14px 0;
+  color: #9a3412;
+  font-weight: 750;
+  line-height: 1.45;
 }
 
 .detail-list {
@@ -1553,7 +1708,8 @@ svg {
   .sale-card,
   .sale-price-grid,
   .sale-share-actions,
-  .sale-share-preview {
+  .sale-share-preview,
+  .backup-preview-grid {
     grid-template-columns: 1fr;
   }
 

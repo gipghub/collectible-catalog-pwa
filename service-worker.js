@@ -1,4 +1,4 @@
-const CACHE_NAME = "collectible-catalog-v20";
+const CACHE_NAME = "collectible-catalog-v21";
 const APP_FILES = [
   "./",
   "./index.html",

@@ -10,6 +10,8 @@ export function createUserProfile(input = {}) {
     defaultCategory: cleanText(input.defaultCategory, "Other"),
     currency: normalizeCurrency(input.currency),
     lastBackupAt: cleanText(input.lastBackupAt),
+    lastLabelPrintedAt: cleanText(input.lastLabelPrintedAt),
+    onboardingDismissedAt: cleanText(input.onboardingDismissedAt),
     theme: normalizeTheme(input.theme)
   };
 }
