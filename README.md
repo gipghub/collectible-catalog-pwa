@@ -27,6 +27,8 @@ If that port is already in use, run the same command with another port, for exam
 
 The app stores catalog data locally in the browser with IndexedDB. Photos are resized in-browser before storage. Older `localStorage` catalog data is migrated into IndexedDB the first time the updated app opens.
 
+To safely try restore preview without risking real data, use the sample backup in [docs/examples/sample-backup.json](docs/examples/sample-backup.json).
+
 Production sync and cloud photo upload can be enabled by defining `window.COLLECTIBLE_APP_CONFIG` before `src/main.js` loads. Without that config, the app stays in local-only mode. See [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md) and [docs/PRODUCTION_BACKEND.md](docs/PRODUCTION_BACKEND.md).
 
 ## Run The Local API
@@ -79,6 +81,7 @@ npm run test:backend
 - Seller tracking for listing status, sale site, listing URL, listed date, and sold-via details.
 - Printable public price tags plus a private seller sheet for sale-day tracking.
 - Printable labels with catalog code, item URL, Code 128 barcode, scannable QR code, and compact/Avery 5160/large-tag sheet presets.
+- Print QA checklist for label sheets, QR/barcode scans, and yard-sale sheets.
 - Backup reminder status so a local-only catalog does not go too long without an export.
 - First-run checklist for adding an item, taking a photo, exporting a backup, printing labels, and marking yard-sale items.
 - Sync-ready repository boundary with visible local/sync status in the app header.
@@ -99,4 +102,4 @@ npm run test:backend
 5. Add optional cloud backup for users who want device-to-device recovery without managing JSON files.
 6. Wrap the PWA with Expo, Capacitor, or native shells for app-store distribution.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), [docs/CLOUD_STORAGE_PLAN.md](docs/CLOUD_STORAGE_PLAN.md), and [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md) for the design approach.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md), [docs/CLOUD_STORAGE_PLAN.md](docs/CLOUD_STORAGE_PLAN.md), [docs/DEVELOPMENT_PROCESS.md](docs/DEVELOPMENT_PROCESS.md), [docs/LOCAL_DATABASE.md](docs/LOCAL_DATABASE.md), and [docs/PRINT_CHECKLIST.md](docs/PRINT_CHECKLIST.md) for the design approach and local-use guidance.

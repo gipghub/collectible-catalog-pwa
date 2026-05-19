@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "app": "collectible-catalog-pwa",
+  "createdAt": "2026-05-19T00:00:00.000Z",
+  "profile": {
+    "displayName": "Sample Collector",
+    "email": "",
+    "collectionName": "Sample collection",
+    "defaultCategory": "Other",
+    "currency": "USD",
+    "lastBackupAt": "2026-05-19T00:00:00.000Z",
+    "lastLabelPrintedAt": "",
+    "onboardingDismissedAt": "",
+    "theme": "dark"
+  },
+  "items": [
+    {
+      "id": "sample-coin-001",
+      "catalogCode": "COL-20260519-SAMPLE1",
+      "title": "Sample 1964 Silver Quarter",
+      "category": "Coins",
+      "maker": "U.S. Mint",
+      "series": "Washington Quarter",
+      "condition": "Good",
+      "acquisitionDate": "2026-05-01",
+      "purchasePrice": 4,
+      "estimatedValue": 7,
+      "saleStatus": "Keep",
+      "askingPrice": "",
+      "lowestPrice": "",
+      "soldPrice": "",
+      "listingStatus": "Not Listed",
+      "saleSite": "Not set",
+      "listingUrl": "",
+      "listedAt": "",
+      "soldVia": "",
+      "saleNotes": "",
+      "tags": [
+        "silver",
+        "coin"
+      ],
+      "notes": "Sample item for testing restore preview.",
+      "photoDataUrl": "",
+      "comparables": [
+        {
+          "id": "sample-comparable-001",
+          "source": "Manual estimate",
+          "title": "Similar circulated 1964 quarter",
+          "price": 7,
+          "url": "https://example.com/sample-sale",
+          "soldAt": "2026-04-30",
+          "notes": "Example comparable only."
+        }
+      ],
+      "comparableCandidates": [],
+      "createdAt": "2026-05-19T00:00:00.000Z",
+      "updatedAt": "2026-05-19T00:00:00.000Z"
+    },
+    {
+      "id": "sample-card-001",
+      "catalogCode": "COL-20260519-SAMPLE2",
+      "title": "Sample Rookie Card",
+      "category": "Trading Cards",
+      "maker": "Example Cards",
+      "series": "Sample Set",
+      "condition": "Near Mint",
+      "acquisitionDate": "2026-05-02",
+      "purchasePrice": 10,
+      "estimatedValue": 25,
+      "saleStatus": "Sell",
+      "askingPrice": 12,
+      "lowestPrice": 8,
+      "soldPrice": "",
+      "listingStatus": "Drafted",
+      "saleSite": "Facebook Marketplace",
+      "listingUrl": "",
+      "listedAt": "",
+      "soldVia": "",
+      "saleNotes": "Example yard-sale candidate.",
+      "tags": [
+        "card",
+        "sample"
+      ],
+      "notes": "Use this item to test yard-sale print sheets.",
+      "photoDataUrl": "",
+      "comparables": [],
+      "comparableCandidates": [],
+      "createdAt": "2026-05-19T00:00:00.000Z",
+      "updatedAt": "2026-05-19T00:00:00.000Z"
+    }
+  ]
+}

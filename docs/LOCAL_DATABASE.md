@@ -34,6 +34,8 @@ Backups are downloaded as dated JSON files:
 collectible-catalog-backup-YYYY-MM-DD.json
 ```
 
+A safe sample file for practicing restore preview is available at [docs/examples/sample-backup.json](examples/sample-backup.json).
+
 Each backup includes:
 
 - Backup format version.
